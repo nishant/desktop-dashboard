@@ -3,6 +3,7 @@ export type {
   TrackData, SpotifyAuthStatus,
   SpotifyPlaylist, SpotifyDevice,
   SpotifyTrackItem, SpotifyPlaylistsPage, SpotifyTracksPage,
+  SpotifySearchResults,
 } from './types/spotify';
 export type { StocksData, StockQuote } from './types/stocks';
 export type { HardwareData, CpuData, GpuData, DiskIo, DiskUsage, NetworkIo } from './types/hardware';

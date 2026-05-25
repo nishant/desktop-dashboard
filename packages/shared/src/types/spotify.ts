@@ -57,3 +57,8 @@ export interface SpotifyTracksPage {
   offset: number;
   limit: number;
 }
+
+export interface SpotifySearchResults {
+  tracks: SpotifyTrackItem[];
+  episodes: SpotifyTrackItem[];
+}

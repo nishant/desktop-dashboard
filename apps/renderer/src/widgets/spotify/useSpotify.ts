@@ -1,9 +1,20 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/apiClient';
 import type {
   TrackData, SpotifyAuthStatus,
   SpotifyPlaylistsPage, SpotifyTracksPage, SpotifyDevice,
+  SpotifySearchResults,
 } from '@dash/shared';
+
+export function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export function useSpotifyStatus() {
   return useQuery<SpotifyAuthStatus>({
@@ -196,5 +207,27 @@ export function usePlayTrack() {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
     },
+  });
+}
+
+export function useSpotifySearch(query: string, enabled: boolean) {
+  const trimmed = query.trim();
+  return useQuery<SpotifySearchResults>({
+    queryKey: ['spotify-search', trimmed.toLowerCase()],
+    queryFn: () =>
+      apiClient.get<SpotifySearchResults>(
+        `/api/spotify/search?q=${encodeURIComponent(trimmed)}&limit=20`,
+      ),
+    enabled: enabled && trimmed.length >= 2,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useQueueTrack() {
+  return useMutation({
+    mutationFn: (args: { uri: string; deviceId?: string }) =>
+      apiClient.post('/api/spotify/queue', args),
   });
 }

@@ -3,6 +3,7 @@ import type {
   TrackData, SpotifyAuthStatus,
   SpotifyPlaylist, SpotifyDevice,
   SpotifyPlaylistsPage, SpotifyTracksPage, SpotifyTrackItem,
+  SpotifySearchResults,
 } from '@dash/shared';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -153,6 +154,20 @@ function getTrackPage(key: string): SpotifyTracksPage | null {
 }
 function setTrackPage(key: string, data: SpotifyTracksPage): void {
   trackPageCache.set(key, { data, expiresAt: Date.now() + 60_000 });
+}
+
+// Search cache keyed by lowercased query — short TTL is fine, search rarely changes per query
+const searchCache = new Map<string, { data: SpotifySearchResults; expiresAt: number }>();
+function getSearch(key: string): SpotifySearchResults | null {
+  const e = searchCache.get(key);
+  return e && Date.now() < e.expiresAt ? e.data : null;
+}
+function setSearch(key: string, data: SpotifySearchResults): void {
+  searchCache.set(key, { data, expiresAt: Date.now() + 30_000 });
+  if (searchCache.size > 100) {
+    const oldestKey = searchCache.keys().next().value;
+    if (oldestKey !== undefined) searchCache.delete(oldestKey);
+  }
 }
 
 // ── Now playing ───────────────────────────────────────────────────────────────
@@ -616,4 +631,98 @@ export const spotifyRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (err) { return reply.code(502).send({ error: String(err) }); }
     },
   );
+
+  // GET /api/spotify/search?q=...&limit=20
+  // Returns tracks + episodes. Spotify's native ranking is already typo-tolerant.
+  fastify.get<{
+    Querystring: { q?: string; limit?: string };
+    Reply: SpotifySearchResults | { error: string };
+  }>('/search', async (req, reply) => {
+    const q = (req.query.q ?? '').trim();
+    if (q.length < 2) return reply.send({ tracks: [], episodes: [] });
+
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit ?? '20', 10)));
+    const cacheKey = `${limit}|${q.toLowerCase()}`;
+    const cached = getSearch(cacheKey);
+    if (cached) return reply.send(cached);
+
+    try {
+      const params = new URLSearchParams({
+        q, type: 'track,episode', limit: String(limit),
+      });
+      const res = await spotifyRequest('GET', `/search?${params.toString()}`);
+      if (!res.ok) throw new Error(`Spotify search API ${res.status}: ${await res.text()}`);
+
+      const d = await res.json() as {
+        tracks?: { items: Array<{
+          id: string; name: string; uri: string; duration_ms: number; is_local: boolean;
+          artists: { name: string }[];
+          album: { images: { url: string; width: number }[] };
+        } | null> };
+        episodes?: { items: Array<{
+          id: string; name: string; uri: string; duration_ms: number;
+          show?: { name: string; images: { url: string; width: number }[] };
+          images?: { url: string; width: number }[];
+        } | null> };
+      };
+
+      const pickImage = (imgs: { url: string; width: number }[] | undefined): string | null => {
+        if (!imgs?.length) return null;
+        return (imgs.find((i) => i.width <= 300) ?? imgs[imgs.length - 1]).url;
+      };
+
+      const tracks: SpotifyTrackItem[] = (d.tracks?.items ?? [])
+        .filter((t): t is NonNullable<typeof t> => t !== null)
+        .map((t) => ({
+          trackId: t.id,
+          trackName: t.name,
+          artistName: t.artists.map((a) => a.name).join(', '),
+          durationMs: t.duration_ms,
+          uri: t.uri,
+          type: 'track' as const,
+          imageUrl: pickImage(t.album?.images),
+          isLocal: t.is_local,
+        }));
+
+      const episodes: SpotifyTrackItem[] = (d.episodes?.items ?? [])
+        .filter((e): e is NonNullable<typeof e> => e !== null)
+        .map((e) => ({
+          trackId: e.id,
+          trackName: e.name,
+          artistName: e.show?.name ?? '',
+          durationMs: e.duration_ms,
+          uri: e.uri,
+          type: 'episode' as const,
+          imageUrl: pickImage(e.show?.images ?? e.images),
+          isLocal: false,
+        }));
+
+      const data: SpotifySearchResults = { tracks, episodes };
+      setSearch(cacheKey, data);
+      return reply.send(data);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.error(`[spotify] search: ${msg}`);
+      return reply.code(502).send({ error: msg });
+    }
+  });
+
+  // POST /api/spotify/queue  { uri, deviceId? }
+  fastify.post<{ Body: { uri: string; deviceId?: string } }>('/queue', async (req, reply) => {
+    try {
+      const { uri, deviceId } = req.body;
+      if (!uri) return reply.code(400).send({ error: 'uri required' });
+      const params = new URLSearchParams({ uri });
+      if (deviceId) params.set('device_id', deviceId);
+      const res = await spotifyRequest('POST', `/me/player/queue?${params.toString()}`);
+      if (res.status === 404) {
+        devicesCache.clear();
+        return reply.code(404).send({ error: 'No active device — open Spotify on a device first' });
+      }
+      if (!res.ok && res.status !== 204) {
+        return reply.code(502).send({ error: `Spotify ${res.status}: ${await res.text()}` });
+      }
+      return reply.code(204).send();
+    } catch (err) { return reply.code(502).send({ error: String(err) }); }
+  });
 };
