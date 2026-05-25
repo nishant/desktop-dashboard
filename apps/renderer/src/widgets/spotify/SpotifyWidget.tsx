@@ -498,62 +498,143 @@ function NowPlayingView({
 
   const isPodcast = data.type === 'episode';
 
-  // Size-variant values
   const ex = size === 'expanded';
-  const artSize = ex ? 'w-24 h-24' : 'w-14 h-14';
-  const trackNameSize = ex ? 'text-base' : 'text-sm';
-  const artistSize = ex ? 'text-sm' : 'text-xs';
-  const playBtnSize = ex ? 'w-12 h-12' : 'w-9 h-9';
-  const playIconSize = ex ? 20 : 16;
-  const skipIconSize = ex ? 22 : 17;
-  const seekIconSize = ex ? 18 : 15;
-  const shuffleRepeatSize = ex ? 17 : 14;
 
+  // Shared controls block used in both layouts
+  const controls = (
+    <div className="flex items-center justify-between">
+      <button onClick={() => shuffle.mutate(!data.shuffleState)}
+        className={`transition-colors ${activeClass(data.shuffleState)}`} title="Shuffle">
+        <Shuffle size={ex ? 17 : 14} />
+      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={handleRewind}
+          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Rewind 15s">
+          <RotateCcw size={ex ? 18 : 15} />
+          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
+        </button>
+        <button onClick={() => previous.mutate()}
+          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Previous">
+          <SkipBack size={ex ? 22 : 17} />
+        </button>
+        <button onClick={handlePlayPause}
+          className={`${ex ? 'w-12 h-12' : 'w-9 h-9'} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center transition-all duration-300`}
+          title={data.isPlaying ? 'Pause' : 'Play'}>
+          {data.isPlaying
+            ? <Pause size={ex ? 20 : 16} fill="currentColor" />
+            : <Play size={ex ? 20 : 16} fill="currentColor" className="ml-0.5" />}
+        </button>
+        <button onClick={() => next.mutate()}
+          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Next">
+          <SkipForward size={ex ? 22 : 17} />
+        </button>
+        <button onClick={handleSkipFwd}
+          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Skip forward 15s">
+          <RotateCw size={ex ? 18 : 15} />
+          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
+        </button>
+      </div>
+      <button onClick={() => repeat.mutate(nextRepeatState(data.repeatState))}
+        className={`transition-colors ${activeClass(data.repeatState !== 'off')}`}
+        title={`Repeat: ${data.repeatState}`}>
+        <RepeatIcon state={data.repeatState} />
+      </button>
+    </div>
+  );
+
+  const actionIcons = (
+    <div className="flex items-center gap-1 shrink-0">
+      <button onClick={onOpenPlaylists}
+        className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5" title="Browse playlists">
+        <ListMusic size={14} />
+      </button>
+      <button onClick={onOpenSearch}
+        className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5" title="Search">
+        <Search size={13} />
+      </button>
+    </div>
+  );
+
+  // ── Expanded layout — art fills vertical space, controls pinned bottom ────────
+  if (ex) {
+    return (
+      <div className="h-full flex flex-col px-4 pt-3 pb-4 gap-2">
+        {/* Track title + icons */}
+        <div className="flex items-start gap-2 shrink-0">
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-medium text-zinc-100 truncate leading-tight">{data.trackName || '—'}</p>
+            <p className="text-sm text-zinc-400 truncate mt-0.5">{data.artistName}</p>
+          </div>
+          {actionIcons}
+        </div>
+
+        {/* Album art — grows to fill available space */}
+        <div className="flex-1 flex items-center justify-center min-h-0 py-1">
+          {data.albumArtUrl ? (
+            <img
+              src={data.albumArtUrl}
+              alt={data.trackName}
+              className="h-full max-h-[240px] aspect-square object-cover rounded-lg shadow-lg"
+            />
+          ) : (
+            <div className="h-full max-h-[240px] aspect-square rounded-lg bg-zinc-800 flex items-center justify-center">
+              {isPodcast ? <Mic2 size={48} className="text-zinc-600" /> : <Music size={48} className="text-zinc-600" />}
+            </div>
+          )}
+        </div>
+
+        {/* Album name / podcast tag */}
+        {!isPodcast && data.albumName && (
+          <p className="text-zinc-600 text-xs truncate text-center shrink-0">{data.albumName}</p>
+        )}
+        {isPodcast && (
+          <p className="text-[10px] text-purple-400/70 text-center shrink-0">Podcast</p>
+        )}
+
+        {/* Progress */}
+        <div className="shrink-0">
+          <ProgressBar
+            progressMs={data.progressMs}
+            durationMs={data.durationMs}
+            isPlaying={data.isPlaying}
+            onSeek={(ms) => { localProgressRef.current = ms; seek.mutate(ms); }}
+            onTick={(ms) => { localProgressRef.current = ms; }}
+          />
+        </div>
+
+        {/* Controls */}
+        <div className="shrink-0">{controls}</div>
+
+        {/* Volume */}
+        <div className="flex justify-end shrink-0">
+          <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Compact layout — horizontal art + info ────────────────────────────────────
   return (
-    <div className={`flex flex-col gap-3 px-4 pb-4 ${ex ? 'pt-3' : 'pt-2'}`}>
-      {/* Album art + track info + action icons */}
+    <div className="flex flex-col gap-3 px-4 pb-4 pt-2">
       <div className="flex gap-3 items-center min-w-0">
         {data.albumArtUrl ? (
-          <img
-            src={data.albumArtUrl}
-            alt={data.trackName}
-            className={`${artSize} rounded-md object-cover shrink-0 transition-all duration-300`}
-          />
+          <img src={data.albumArtUrl} alt={data.trackName}
+            className="w-14 h-14 rounded-md object-cover shrink-0" />
         ) : (
-          <div className={`${artSize} rounded-md bg-zinc-800 shrink-0 flex items-center justify-center transition-all duration-300`}>
-            {isPodcast ? <Mic2 size={ex ? 28 : 20} className="text-zinc-600" /> : <Music size={ex ? 28 : 20} className="text-zinc-600" />}
+          <div className="w-14 h-14 rounded-md bg-zinc-800 shrink-0 flex items-center justify-center">
+            {isPodcast ? <Mic2 size={20} className="text-zinc-600" /> : <Music size={20} className="text-zinc-600" />}
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className={`text-zinc-100 ${trackNameSize} font-medium truncate leading-tight`}>{data.trackName || '—'}</p>
-          <p className={`text-zinc-400 ${artistSize} truncate mt-0.5`}>{data.artistName}</p>
+          <p className="text-zinc-100 text-sm font-medium truncate leading-tight">{data.trackName || '—'}</p>
+          <p className="text-zinc-400 text-xs truncate mt-0.5">{data.artistName}</p>
           {!isPodcast && data.albumName && (
             <p className="text-zinc-600 text-xs truncate">{data.albumName}</p>
           )}
-          {isPodcast && (
-            <p className="text-[10px] text-purple-400/70 mt-0.5">Podcast</p>
-          )}
+          {isPodcast && <p className="text-[10px] text-purple-400/70 mt-0.5">Podcast</p>}
         </div>
-        {/* Playlist + Search icons — bug 5: zinc-500 to match other inactive icons */}
-        <div className="flex items-center gap-1 shrink-0 self-start mt-0.5">
-          <button
-            onClick={onOpenPlaylists}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
-            title="Browse playlists"
-          >
-            <ListMusic size={14} />
-          </button>
-          <button
-            onClick={onOpenSearch}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
-            title="Search"
-          >
-            <Search size={13} />
-          </button>
-        </div>
+        <div className="self-start mt-0.5">{actionIcons}</div>
       </div>
-
-      {/* Progress bar */}
       <ProgressBar
         progressMs={data.progressMs}
         durationMs={data.durationMs}
@@ -561,73 +642,7 @@ function NowPlayingView({
         onSeek={(ms) => { localProgressRef.current = ms; seek.mutate(ms); }}
         onTick={(ms) => { localProgressRef.current = ms; }}
       />
-
-      {/* Controls: shuffle | ←15 prev [▶] next 15→ | repeat */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => shuffle.mutate(!data.shuffleState)}
-          className={`transition-colors ${activeClass(data.shuffleState)}`}
-          title="Shuffle"
-        >
-          <Shuffle size={shuffleRepeatSize} />
-        </button>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRewind}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors relative"
-            title="Rewind 15s"
-          >
-            <RotateCcw size={seekIconSize} />
-            <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
-          </button>
-
-          <button
-            onClick={() => previous.mutate()}
-            className="text-zinc-400 hover:text-zinc-100 transition-colors"
-            title="Previous"
-          >
-            <SkipBack size={skipIconSize} />
-          </button>
-
-          <button
-            onClick={handlePlayPause}
-            className={`${playBtnSize} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center transition-all duration-300`}
-            title={data.isPlaying ? 'Pause' : 'Play'}
-          >
-            {data.isPlaying
-              ? <Pause size={playIconSize} fill="currentColor" />
-              : <Play size={playIconSize} fill="currentColor" className="ml-0.5" />}
-          </button>
-
-          <button
-            onClick={() => next.mutate()}
-            className="text-zinc-400 hover:text-zinc-100 transition-colors"
-            title="Next"
-          >
-            <SkipForward size={skipIconSize} />
-          </button>
-
-          <button
-            onClick={handleSkipFwd}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors relative"
-            title="Skip forward 15s"
-          >
-            <RotateCw size={seekIconSize} />
-            <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
-          </button>
-        </div>
-
-        <button
-          onClick={() => repeat.mutate(nextRepeatState(data.repeatState))}
-          className={`transition-colors ${activeClass(data.repeatState !== 'off')}`}
-          title={`Repeat: ${data.repeatState}`}
-        >
-          <RepeatIcon state={data.repeatState} />
-        </button>
-      </div>
-
-      {/* Volume */}
+      {controls}
       <div className="flex justify-end">
         <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
       </div>
