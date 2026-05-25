@@ -1,3 +1,6 @@
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,4 +17,30 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+/* Style the react-resizable handle to match dark theme */
+.react-resizable-handle {
+  background-image: none;
+  border: none;
+}
+
+.react-resizable-handle::after {
+  border-right: 2px solid theme('colors.zinc.600');
+  border-bottom: 2px solid theme('colors.zinc.600');
+  border-radius: 0 0 2px 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.react-grid-item:hover .react-resizable-handle::after {
+  opacity: 1;
+}
+
+/* Remove default placeholder styling and use our own */
+.react-grid-item.react-grid-placeholder {
+  background: theme('colors.zinc.800');
+  border: 1px dashed theme('colors.zinc.600');
+  border-radius: 0.5rem;
+  opacity: 0.5;
 }
