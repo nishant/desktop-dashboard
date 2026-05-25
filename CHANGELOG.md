@@ -4,6 +4,52 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #7] feat: Spotify widget — now playing, playlists, track list, podcasts, OAuth
+**Branch:** `feature/spotify-widget` → `master`  
+**Date:** 2026-05-25
+
+### Added
+- `packages/server/src/routes/spotify.ts` — full implementation:
+  - **PKCE OAuth:** `GET /api/spotify/auth-url` generates PKCE params, returns auth URL; `GET /api/spotify/callback` exchanges code for tokens
+  - Tokens persisted to `~/.dash/spotify_tokens.json`; auto-refresh when < 60s from expiry
+  - `GET /api/spotify/auth-status`, `GET /api/spotify/now-playing` (2.5s TTL cache)
+  - **Podcast support:** `additional_types=track,episode`; episode maps show name → artist field, show artwork
+  - `POST /api/spotify/play`, `/pause`, `/next`, `/previous`, `/seek`, `/volume`, `/shuffle`, `/repeat`
+  - `GET /api/spotify/playlists?offset&limit` — paginated (20/page); Liked Songs synthetic item prepended at offset=0 (parallel fetch for badge count); 30s page cache
+  - `GET /api/spotify/playlist-tracks?playlistId&offset&limit` — 100/page; handles both regular playlists and `liked-songs` (maps to `GET /me/tracks`); per-page 60s cache; filters local tracks
+  - `GET /api/spotify/devices` — 5s cache
+  - `POST /api/spotify/play-context { contextUri, deviceId?, shuffle? }` — sets shuffle state before starting if requested
+  - `POST /api/spotify/play-track { trackUri, contextUri?, deviceId? }` — plays specific track within context
+  - Scopes: `user-read-playback-state`, `user-modify-playback-state`, `user-read-currently-playing`, `playlist-read-private`, `playlist-read-collaborative`, `user-library-read`
+- `packages/shared/src/types/spotify.ts` — `TrackData` (+ `type: 'track' | 'episode'`), `SpotifyPlaylist`, `SpotifyDevice`, `SpotifyTrackItem`, `SpotifyPlaylistsPage`, `SpotifyTracksPage`
+- `apps/renderer/src/widgets/spotify/useSpotify.ts`:
+  - `usePlaylistsInfinite()` — `useInfiniteQuery`, 20/page
+  - `usePlaylistTracksInfinite(playlistId)` — `useInfiniteQuery`, 100/page
+  - `useDevices()`, `usePlayContext()`, `usePlayTrack()`
+  - Optimistic updates on all playback mutations
+- `apps/renderer/src/widgets/spotify/SpotifyWidget.tsx`:
+  - **Auth:** Connect Spotify → PKCE flow via `shell.openExternal`
+  - **Now playing:** album art, track/artist/album, smooth progress bar (1s local ticker between 3s polls), prev / ←15s / play-pause / 15s→ / next controls, shuffle + repeat toggles, volume slider
+  - **Volume icon click** → mute toggle; restores pre-mute level on second click
+  - **±15s buttons** (`RotateCcw`/`RotateCw`) use ref-tracked local progress for accuracy
+  - **Playlist panel** (toggle via `ListMusic` icon or "Browse playlists" button):
+    - Infinite scroll playlist list — play button + shuffle button always visible; click row body → track list
+    - Infinite scroll track list — click track → starts playback; local files greyed/disabled
+    - Device chips at top — click to target playback device; active device auto-selected
+    - Liked Songs first with heart icon + indigo→purple gradient
+  - **Podcast now-playing:** `Mic2` icon fallback, "Podcast" label, no album line
+- `apps/main/src/ipc/index.ts` — `spotify:open-auth` via `shell.openExternal(url)`
+- `apps/main/src/preload.ts` — `openSpotifyAuth(url: string)` via contextBridge
+- `apps/renderer/src/lib/apiClient.ts` — **fix:** omit `Content-Type` header when body is absent; skip `res.json()` on 204 responses (was causing `FST_ERR_CTP_EMPTY_JSON_BODY` on all no-body POSTs)
+
+### Notes
+- **Re-auth required** for new scopes (`playlist-read-private`, `playlist-read-collaborative`, `user-library-read`) — click Connect Spotify; `show_dialog=false` makes it instant
+- **Redirect URI:** `SPOTIFY_REDIRECT_URI=http://127.0.0.1:7432/api/spotify/callback` — must also be registered in Spotify Developer Dashboard
+- **Token file:** `~/.dash/spotify_tokens.json` — delete to force re-auth
+- **`apiClient` fix** also repairs the sound widget's mute/device mutations which had the same silent failure
+
+---
+
 ## [PR #6] feat: hardware widget — CPU, GPU, RAM, disk, network with bars/sparklines toggle
 **Branch:** `feature/hardware-widget` → `master`  
 **Date:** 2026-05-24
