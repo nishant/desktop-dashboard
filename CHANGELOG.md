@@ -4,6 +4,48 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #6] feat: hardware widget — CPU, GPU, RAM, disk, network with bars/sparklines toggle
+**Branch:** `feature/hardware-widget` → `master`  
+**Date:** 2026-05-24
+
+### Added
+- `packages/server/src/routes/hardware.ts` — full `systeminformation` implementation:
+  - All subsystems fetched in parallel via `Promise.all`
+  - CPU: brand/cores/physicalCores cached statically (fetched once); live usage + per-core load + temp
+  - GPU: picks highest-VRAM controller (dGPU > iGPU on multi-GPU Windows machines); VRAM used/total, utilization %, temp, clock speed — all from nvidia-smi on Windows NVIDIA
+  - RAM: uses `mem.active` (actual in-use pages) rather than `mem.used` for accurate macOS figure; swap included
+  - Disk I/O: aggregate read/write MB/s via `si.fsStats()` (`rx_sec`/`wx_sec`); per-mount usage from `si.fsSize()` with virtual/snap filesystem filtering
+  - Network: bytes→Mbps, loopback excluded, sorted by activity (not filtered) — always shows top 3 real interfaces
+  - Battery: shown only when `hasBattery === true` (macOS laptops)
+  - Uptime via `os.uptime()`
+  - 900ms TTL cache (prevents duplicate systeminformation calls from 1s poll)
+- `packages/shared/src/types/hardware.ts` — extended types:
+  - `CpuData`: added `brand`, `cores`, `physicalCores`
+  - `GpuData`: added `name`, `clockMhz`
+  - `HardwareData.ram`: added `swapUsedMb`, `swapTotalMb`
+  - New `DiskUsage` interface: `mount`, `usedGb`, `totalGb`, `usePercent`
+  - `HardwareData`: added `diskUsage`, `uptime`, `battery`
+- `apps/renderer/src/widgets/hardware/useHardware.ts` — 1s refetch hook with 60-entry rolling history buffers (cpuUsage, gpuUsage, ramUsage, netUp, netDown, diskRead, diskWrite)
+- `apps/renderer/src/widgets/hardware/HardwareWidget.tsx`:
+  - **Bars mode:** animated usage bars for CPU/GPU/RAM; VRAM secondary bar; per-mount disk usage bars
+  - **Sparks mode:** Recharts AreaChart sparklines for each metric (60-second history)
+  - Toggle button (Bars / Sparks) in widget header
+  - Per-core mini bars (color-coded: blue→amber→red by load)
+  - Temperature color-coding: green <70°C, amber 70–84°C, red ≥85°C
+  - **Configure panel:** gear button in header opens a 2-col checkbox grid; toggles which sections (CPU/GPU/RAM/Disk/Network/Battery) are rendered; all sections on by default
+  - GPU always renders (shows "No GPU detected" placeholder if `gpu` is null) — no unmounting on null
+  - Battery always renders when section is visible (shows "No battery" placeholder on desktop) — no unmounting
+  - Network always renders top-N interfaces regardless of idle traffic — no unmounting on idle
+  - Uptime in footer
+- `apps/renderer/src/store/hardwareStore.ts` — Zustand `persist` store; section visibility saved to `localStorage` under key `hardware-config`
+
+### Notes
+- **Windows gaming:** GPU usage/VRAM/temp/clock require NVIDIA drivers (nvidia-smi); systeminformation calls it automatically
+- **macOS:** GPU utilization is not available (Apple Silicon has no systeminformation support for GPU usage); VRAM shows 0/dynamic; battery card appears on MacBook
+- **First poll:** `fsStats` disk I/O returns 0 on the very first call (needs baseline); accurate from second poll onward
+
+---
+
 ## [PR #5] feat: sound widget — volume, mute, device switching, Windows app mixer
 **Branch:** `feature/sound-widget` → `master`  
 **Date:** 2026-05-25
