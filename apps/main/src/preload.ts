@@ -4,7 +4,7 @@ import type { ElectronAPI, IpcChannels } from '@dash/shared';
 const electronAPI: ElectronAPI = {
   minimize: () => ipcRenderer.send('app:minimize' satisfies IpcChannels),
   close: () => ipcRenderer.send('app:close' satisfies IpcChannels),
-  startSpotifyAuth: () => ipcRenderer.send('spotify:auth-start' satisfies IpcChannels),
+  openSpotifyAuth: (url: string) => ipcRenderer.send('spotify:open-auth' satisfies IpcChannels, url),
   onSpotifyTokenStored: (cb: () => void) => {
     const channel: IpcChannels = 'spotify:token-store';
     ipcRenderer.on(channel, cb);

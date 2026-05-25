@@ -1,5 +1,9 @@
 export type { WeatherData, WeatherCurrent, WeatherHourly, WeatherDaily } from './types/weather';
-export type { TrackData, SpotifyAuthStatus } from './types/spotify';
+export type {
+  TrackData, SpotifyAuthStatus,
+  SpotifyPlaylist, SpotifyDevice,
+  SpotifyTrackItem, SpotifyPlaylistsPage, SpotifyTracksPage,
+} from './types/spotify';
 export type { StocksData, StockQuote } from './types/stocks';
 export type { HardwareData, CpuData, GpuData, DiskIo, DiskUsage, NetworkIo } from './types/hardware';
 export type { SoundData, AudioDevice, AudioSession } from './types/sound';
