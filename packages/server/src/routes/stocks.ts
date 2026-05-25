@@ -91,7 +91,9 @@ function buildData(
   const open = isMarketOpen();
   const equities: StockQuote[] = symbols.map((ticker) => {
     const snap = snapshots.get(ticker);
-    const lastPrice = snap?.dailyBar?.c ?? snap?.latestTrade?.p ?? 0;
+    const lastPrice = open
+      ? (snap?.latestTrade?.p ?? snap?.dailyBar?.c ?? 0)
+      : (snap?.dailyBar?.c ?? snap?.latestTrade?.p ?? 0);
     const prevClose = snap?.prevDailyBar?.c ?? lastPrice;
     const change = prevClose > 0 ? lastPrice - prevClose : 0;
     const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
@@ -113,7 +115,7 @@ function buildData(
 }
 
 const cache = new Map<string, { data: StocksData; expiresAt: number }>();
-const CACHE_TTL = 5000;
+const CACHE_TTL = 4 * 60 * 1000; // 4 min — slightly under renderer's 5-min poll
 
 function cacheKey(symbols: string[]): string {
   return [...symbols].sort().join(',');

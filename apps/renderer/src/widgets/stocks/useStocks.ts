@@ -8,8 +8,8 @@ export function useStocks() {
   return useQuery<StocksData>({
     queryKey: ['stocks', watchlist],
     queryFn: () => apiClient.get<StocksData>(`/api/stocks?symbols=${watchlist.join(',')}`),
-    refetchInterval: 5000,
-    staleTime: 4000,
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 4 * 60 * 1000,
     enabled: watchlist.length > 0,
   });
 }
