@@ -35,3 +35,12 @@ export function useSwitchDevice() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
   });
 }
+
+export function useSetSessionVolume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ pid, volumePercent }: { pid: number; volumePercent: number }) =>
+      apiClient.post('/api/sound/sessions/volume', { pid, volumePercent }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+  });
+}
