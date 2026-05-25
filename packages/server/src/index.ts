@@ -1,13 +1,15 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { config } from 'dotenv';
+import { resolve } from 'path';
 import { weatherRoutes } from './routes/weather';
 import { spotifyRoutes } from './routes/spotify';
 import { stocksRoutes } from './routes/stocks';
 import { hardwareRoutes } from './routes/hardware';
 import { soundRoutes } from './routes/sound';
 
-config();
+// CWD is packages/server when run via Turborepo — walk up to monorepo root
+config({ path: resolve(__dirname, '../../../.env') });
 
 const server = Fastify({ logger: { level: 'info' } });
 

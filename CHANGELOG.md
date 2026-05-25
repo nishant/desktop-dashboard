@@ -4,6 +4,38 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #4] feat: stocks widget — Alpaca REST snapshots, card grid UI, editable watchlist
+**Branch:** `feature/stocks-widget` → `master`  
+**Date:** 2026-05-24
+
+### Added
+- `packages/server/src/routes/stocks.ts` — Alpaca IEX REST implementation:
+  - Accepts `?symbols=` query param (comma-separated, max 50); defaults to `SPY,QQQ,AAPL,MSFT,NVDA,TSLA,GOOGL,AMZN`
+  - Fetches snapshots + 5-minute bars in parallel; bars non-critical (returns empty on failure)
+  - Uses `dailyBar.c` as last price, `prevDailyBar.c` as prev close for stable change calculation
+  - Market-hours detection via `Intl.DateTimeFormat` with `America/New_York` timezone
+  - 5s in-memory cache per symbol set
+- `apps/renderer/src/store/stocksStore.ts` — Zustand persist store for watchlist (localStorage)
+- `apps/renderer/src/widgets/stocks/useStocks.ts` — TanStack Query, 5s refetch, passes watchlist as query param
+- `apps/renderer/src/widgets/stocks/StocksWidget.tsx` — full widget UI:
+  - 2-column card grid matching mockup
+  - Each card: triangle indicator, ticker, % change (top), Recharts area sparkline (middle), price + dollar change (bottom)
+  - Pencil button in header opens watchlist edit modal (add/remove tickers, persisted)
+  - Market Open / Market Closed status with animated dot
+  - Green/red theming per card based on daily change
+
+### Changed
+- `packages/shared/src/types/stocks.ts` — added `sparkline: number[]` to `StockQuote`
+
+### Removed
+- `packages/server/src/services/alpacaWs.ts` — WebSocket approach dropped (replaced by REST-only)
+- `packages/server/src/services/stocksService.ts` — consolidated into route file
+
+### Notes
+- Alpaca IEX feed: US equities only. Futures (MES=F, MGC=F) and crypto (BTC-USD) are not supported; the watchlist edit modal surfaces this caveat
+
+---
+
 ## [PR #3] feat: weather widget — Open-Meteo, 15-min cache, full forecast UI
 **Branch:** `feature/weather-widget` → `master`  
 **Date:** 2026-05-24
