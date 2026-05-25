@@ -62,6 +62,7 @@ export function DashboardGrid() {
       containerPadding={[PADDING, PADDING]}
       draggableHandle=".widget-drag-handle"
       onLayoutChange={setLayout}
+      compactType="vertical"
       isResizable
       isDraggable
       resizeHandles={['se', 'sw', 'ne', 'nw', 'e', 'w', 's', 'n']}
