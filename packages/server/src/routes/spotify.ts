@@ -458,7 +458,9 @@ export const spotifyRoutes: FastifyPluginAsync = async (fastify) => {
   }>('/playlist-tracks', async (req, reply) => {
     const { playlistId } = req.query;
     const offset = Math.max(0, parseInt(req.query.offset ?? '0', 10));
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit ?? '100', 10)));
+    // Spotify /me/tracks max is 50; regular playlist items max is 100
+    const isLiked = req.query.playlistId === 'liked-songs';
+    const limit = Math.min(isLiked ? 50 : 100, Math.max(1, parseInt(req.query.limit ?? '100', 10)));
     const cacheKey = `${playlistId}|${offset}`;
 
     const cached = getTrackPage(cacheKey);

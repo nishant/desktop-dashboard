@@ -5,7 +5,6 @@ import {
   Music, ListMusic, ArrowLeft, Monitor, Smartphone, Speaker,
   Heart, RotateCcw, RotateCw, Mic2, Search,
 } from 'lucide-react';
-import { SpotifySearchDialog } from './SpotifySearchDialog';
 import {
   useSpotifyStatus, useNowPlaying, useSpotifyAuthUrl,
   usePlay, usePause, useNext, usePrevious,
@@ -13,7 +12,12 @@ import {
   usePlaylistsInfinite, usePlaylistTracksInfinite,
   useDevices, usePlayContext, usePlayTrack,
 } from './useSpotify';
+import { SpotifySearchDialog } from './SpotifySearchDialog';
 import type { TrackData, SpotifyPlaylist, SpotifyDevice, SpotifyTrackItem } from '@dash/shared';
+
+// ── Size variant ──────────────────────────────────────────────────────────────
+
+type SizeVariant = 'compact' | 'expanded';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -109,7 +113,13 @@ function ProgressBar({
 
 // ── Volume slider (icon click = mute toggle) ──────────────────────────────────
 
-function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function VolumeSlider({
+  value, onChange, size,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  size: SizeVariant;
+}) {
   const [local, setLocal] = useState(value);
   const pointerDown = useRef(false);
   const prevVolume = useRef(value > 0 ? value : 50);
@@ -131,6 +141,9 @@ function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number
     }
   };
 
+  const iconSize = size === 'expanded' ? 14 : 12;
+  const sliderW = size === 'expanded' ? 'w-24' : 'w-16';
+
   return (
     <div className="flex items-center gap-1.5">
       <button
@@ -139,15 +152,15 @@ function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number
         title={local === 0 ? 'Unmute' : 'Mute'}
       >
         {local === 0
-          ? <VolumeX size={12} className="shrink-0" />
-          : <Volume2 size={12} className="shrink-0" />}
+          ? <VolumeX size={iconSize} className="shrink-0" />
+          : <Volume2 size={iconSize} className="shrink-0" />}
       </button>
       <input
         type="range" min={0} max={100} value={local}
         onChange={(e) => setLocal(Number(e.target.value))}
         onPointerDown={() => { pointerDown.current = true; }}
         onPointerUp={() => { pointerDown.current = false; onChange(local); }}
-        className="w-16 h-1 rounded-full appearance-none cursor-pointer bg-zinc-700 accent-zinc-300"
+        className={`${sliderW} h-1 rounded-full appearance-none cursor-pointer bg-zinc-700 accent-zinc-300`}
       />
     </div>
   );
@@ -451,10 +464,14 @@ function nextRepeatState(current: TrackData['repeatState']): TrackData['repeatSt
 
 function NowPlayingView({
   data,
+  size,
   onOpenPlaylists,
+  onOpenSearch,
 }: {
   data: TrackData;
+  size: SizeVariant;
   onOpenPlaylists: () => void;
+  onOpenSearch: () => void;
 }) {
   const play = usePlay();
   const pause = usePause();
@@ -481,24 +498,35 @@ function NowPlayingView({
 
   const isPodcast = data.type === 'episode';
 
+  // Size-variant values
+  const ex = size === 'expanded';
+  const artSize = ex ? 'w-24 h-24' : 'w-14 h-14';
+  const trackNameSize = ex ? 'text-base' : 'text-sm';
+  const artistSize = ex ? 'text-sm' : 'text-xs';
+  const playBtnSize = ex ? 'w-12 h-12' : 'w-9 h-9';
+  const playIconSize = ex ? 20 : 16;
+  const skipIconSize = ex ? 22 : 17;
+  const seekIconSize = ex ? 18 : 15;
+  const shuffleRepeatSize = ex ? 17 : 14;
+
   return (
-    <div className="flex flex-col gap-3 px-4 pb-4 pt-2">
-      {/* Album art + track info */}
+    <div className={`flex flex-col gap-3 px-4 pb-4 ${ex ? 'pt-3' : 'pt-2'}`}>
+      {/* Album art + track info + action icons */}
       <div className="flex gap-3 items-center min-w-0">
         {data.albumArtUrl ? (
           <img
             src={data.albumArtUrl}
             alt={data.trackName}
-            className="w-14 h-14 rounded-md object-cover shrink-0"
+            className={`${artSize} rounded-md object-cover shrink-0 transition-all duration-300`}
           />
         ) : (
-          <div className="w-14 h-14 rounded-md bg-zinc-800 shrink-0 flex items-center justify-center">
-            {isPodcast ? <Mic2 size={20} className="text-zinc-600" /> : <Music size={20} className="text-zinc-600" />}
+          <div className={`${artSize} rounded-md bg-zinc-800 shrink-0 flex items-center justify-center transition-all duration-300`}>
+            {isPodcast ? <Mic2 size={ex ? 28 : 20} className="text-zinc-600" /> : <Music size={ex ? 28 : 20} className="text-zinc-600" />}
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-zinc-100 text-sm font-medium truncate leading-tight">{data.trackName || '—'}</p>
-          <p className="text-zinc-400 text-xs truncate mt-0.5">{data.artistName}</p>
+          <p className={`text-zinc-100 ${trackNameSize} font-medium truncate leading-tight`}>{data.trackName || '—'}</p>
+          <p className={`text-zinc-400 ${artistSize} truncate mt-0.5`}>{data.artistName}</p>
           {!isPodcast && data.albumName && (
             <p className="text-zinc-600 text-xs truncate">{data.albumName}</p>
           )}
@@ -506,13 +534,23 @@ function NowPlayingView({
             <p className="text-[10px] text-purple-400/70 mt-0.5">Podcast</p>
           )}
         </div>
-        <button
-          onClick={onOpenPlaylists}
-          className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0 self-start mt-0.5"
-          title="Browse playlists"
-        >
-          <ListMusic size={14} />
-        </button>
+        {/* Playlist + Search icons — bug 5: zinc-500 to match other inactive icons */}
+        <div className="flex items-center gap-1 shrink-0 self-start mt-0.5">
+          <button
+            onClick={onOpenPlaylists}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
+            title="Browse playlists"
+          >
+            <ListMusic size={14} />
+          </button>
+          <button
+            onClick={onOpenSearch}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
+            title="Search"
+          >
+            <Search size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -531,7 +569,7 @@ function NowPlayingView({
           className={`transition-colors ${activeClass(data.shuffleState)}`}
           title="Shuffle"
         >
-          <Shuffle size={14} />
+          <Shuffle size={shuffleRepeatSize} />
         </button>
 
         <div className="flex items-center gap-3">
@@ -540,7 +578,7 @@ function NowPlayingView({
             className="text-zinc-500 hover:text-zinc-300 transition-colors relative"
             title="Rewind 15s"
           >
-            <RotateCcw size={15} />
+            <RotateCcw size={seekIconSize} />
             <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
           </button>
 
@@ -549,17 +587,17 @@ function NowPlayingView({
             className="text-zinc-400 hover:text-zinc-100 transition-colors"
             title="Previous"
           >
-            <SkipBack size={17} />
+            <SkipBack size={skipIconSize} />
           </button>
 
           <button
             onClick={handlePlayPause}
-            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center transition-colors"
+            className={`${playBtnSize} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center transition-all duration-300`}
             title={data.isPlaying ? 'Pause' : 'Play'}
           >
             {data.isPlaying
-              ? <Pause size={16} fill="currentColor" />
-              : <Play size={16} fill="currentColor" className="ml-0.5" />}
+              ? <Pause size={playIconSize} fill="currentColor" />
+              : <Play size={playIconSize} fill="currentColor" className="ml-0.5" />}
           </button>
 
           <button
@@ -567,7 +605,7 @@ function NowPlayingView({
             className="text-zinc-400 hover:text-zinc-100 transition-colors"
             title="Next"
           >
-            <SkipForward size={17} />
+            <SkipForward size={skipIconSize} />
           </button>
 
           <button
@@ -575,7 +613,7 @@ function NowPlayingView({
             className="text-zinc-500 hover:text-zinc-300 transition-colors relative"
             title="Skip forward 15s"
           >
-            <RotateCw size={15} />
+            <RotateCw size={seekIconSize} />
             <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
           </button>
         </div>
@@ -591,7 +629,7 @@ function NowPlayingView({
 
       {/* Volume */}
       <div className="flex justify-end">
-        <VolumeSlider value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
+        <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
       </div>
     </div>
   );
@@ -599,20 +637,35 @@ function NowPlayingView({
 
 // ── Nothing playing ───────────────────────────────────────────────────────────
 
-function NotPlayingView({ onOpenPlaylists }: { onOpenPlaylists: () => void }) {
+function NotPlayingView({
+  onOpenPlaylists,
+  onOpenSearch,
+}: {
+  onOpenPlaylists: () => void;
+  onOpenSearch: () => void;
+}) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3 p-6">
       <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center">
         <Music size={20} className="text-zinc-600" />
       </div>
       <p className="text-zinc-500 text-xs">Nothing playing</p>
-      <button
-        onClick={onOpenPlaylists}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors"
-      >
-        <ListMusic size={12} />
-        Browse playlists
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onOpenPlaylists}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors"
+        >
+          <ListMusic size={12} />
+          Browse playlists
+        </button>
+        <button
+          onClick={onOpenSearch}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors"
+        >
+          <Search size={12} />
+          Search
+        </button>
+      </div>
     </div>
   );
 }
@@ -648,6 +701,19 @@ export function SpotifyWidget() {
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
+  // Responsive sizing — compact < 280px height, expanded ≥ 280px
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<SizeVariant>('compact');
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setSize(entry.contentRect.height >= 280 ? 'expanded' : 'compact');
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const handleConnect = useCallback(async () => {
     const result = await authUrlQuery.refetch();
     if (result.data?.url) window.electron.openSpotifyAuth(result.data.url);
@@ -674,26 +740,25 @@ export function SpotifyWidget() {
 
   return (
     <>
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden">
-        <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
-          <div className="w-2 h-2 rounded-full bg-[#1DB954]" />
-          <span className="text-zinc-400 text-xs font-medium tracking-wide uppercase">Spotify</span>
-          <button
-            onClick={() => setShowSearch(true)}
-            className="ml-auto text-zinc-500 hover:text-zinc-200 transition-colors"
-            title="Search (tracks & podcasts)"
-          >
-            <Search size={13} />
-          </button>
-        </div>
-
+      <div
+        ref={containerRef}
+        className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden"
+      >
         <div className="flex-1 min-h-0">
           {showPlaylists ? (
             <PlaylistPanel onBack={() => setShowPlaylists(false)} />
           ) : hasTrack ? (
-            <NowPlayingView data={track!} onOpenPlaylists={() => setShowPlaylists(true)} />
+            <NowPlayingView
+              data={track!}
+              size={size}
+              onOpenPlaylists={() => setShowPlaylists(true)}
+              onOpenSearch={() => setShowSearch(true)}
+            />
           ) : (
-            <NotPlayingView onOpenPlaylists={() => setShowPlaylists(true)} />
+            <NotPlayingView
+              onOpenPlaylists={() => setShowPlaylists(true)}
+              onOpenSearch={() => setShowSearch(true)}
+            />
           )}
         </div>
       </div>
