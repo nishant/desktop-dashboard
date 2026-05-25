@@ -30,6 +30,14 @@ All changes organized by pull request, newest first.
 ### Changed
 - `App.tsx` — replaced inline static grid with `<DashboardGrid />` + `<LayoutToolbar />`
 - `index.css` — added react-grid-layout and react-resizable base styles; custom dark-theme overrides for placeholder and resize handles
+- All 4 presets redesigned to be mathematically gap-free — every grid cell covered by exactly one widget, verified column-by-column (sum of `h` values for any column `x` = `numRows`)
+- `compactType='vertical'` added — items compact upward on drag so no holes are left behind
+- `rowHeight` changed from fixed `40` to dynamic — computed from window height and current layout's max row extent so the grid always fills 100% of the screen; recalculates on window resize
+
+### Fixed
+- `react-resizable` added as direct dep — pnpm strict hoisting blocked importing its CSS as a transitive dep of `react-grid-layout`
+- Downgraded `react-grid-layout` from v2 (complete API rewrite, no `WidthProvider`) to v1 (stable, documented API); replaced stub `@types/react-grid-layout@2.1.0` with v1 types (`1.3.5`)
+- Default preset had a geometric gap in the bottom-right quadrant — all presets now tile without gaps
 
 ---
 
