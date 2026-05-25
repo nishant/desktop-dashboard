@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Volume1, Volume } from 'lucide-react';
 import { useSound, useSetVolume, useSetMute, useSwitchDevice, useSetSessionVolume } from './useSound';
 import type { AudioDevice, AudioSession } from '@dash/shared';
@@ -19,22 +19,28 @@ function VolumeSlider({
   onChange: (v: number) => void;
   disabled?: boolean;
 }) {
-  const [dragging, setDragging] = useState<number | null>(null);
-  const display = dragging ?? value;
+  const [local, setLocal] = useState(value);
+  const pointerDown = useRef(false);
+
+  // Sync from parent only when user isn't touching the slider.
+  // This lets server polls update the display while idle, but never
+  // interrupts an active drag or snap after a commit.
+  useEffect(() => {
+    if (!pointerDown.current) setLocal(value);
+  }, [value]);
 
   return (
     <input
       type="range"
       min={0}
       max={100}
-      value={display}
+      value={local}
       disabled={disabled}
-      onChange={(e) => setDragging(Number(e.target.value))}
+      onChange={(e) => setLocal(Number(e.target.value))}
+      onPointerDown={() => { pointerDown.current = true; }}
       onPointerUp={() => {
-        if (dragging !== null) {
-          onChange(dragging);
-          setDragging(null);
-        }
+        pointerDown.current = false;
+        onChange(local);
       }}
       className="w-full h-1 rounded-full appearance-none cursor-pointer
         bg-zinc-700 accent-zinc-300
@@ -75,8 +81,12 @@ function DeviceItem({
 }
 
 function SessionRow({ session, onCommit }: { session: AudioSession; onCommit: (pid: number, vol: number) => void }) {
-  const [dragging, setDragging] = useState<number | null>(null);
-  const vol = dragging ?? session.volumePercent;
+  const [local, setLocal] = useState(session.volumePercent);
+  const pointerDown = useRef(false);
+
+  useEffect(() => {
+    if (!pointerDown.current) setLocal(session.volumePercent);
+  }, [session.volumePercent]);
 
   return (
     <div className="flex items-center gap-2 group">
@@ -87,18 +97,17 @@ function SessionRow({ session, onCommit }: { session: AudioSession; onCommit: (p
         type="range"
         min={0}
         max={100}
-        value={vol}
-        onChange={(e) => setDragging(Number(e.target.value))}
+        value={local}
+        onChange={(e) => setLocal(Number(e.target.value))}
+        onPointerDown={() => { pointerDown.current = true; }}
         onPointerUp={() => {
-          if (dragging !== null) {
-            onCommit(session.pid, dragging);
-            setDragging(null);
-          }
+          pointerDown.current = false;
+          onCommit(session.pid, local);
         }}
         className="flex-1 h-1 rounded-full appearance-none cursor-pointer bg-zinc-700 accent-zinc-400"
       />
       <span className="text-zinc-500 text-[10px] tabular-nums font-mono w-7 text-right shrink-0">
-        {vol}%
+        {local}%
       </span>
     </div>
   );
