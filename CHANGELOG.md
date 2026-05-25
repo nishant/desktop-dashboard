@@ -4,6 +4,31 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #5] feat: sound widget — volume, mute, device switching (macOS + Windows)
+**Branch:** `feature/sound-widget` → `master`  
+**Date:** 2026-05-25
+
+### Added
+- `packages/server/src/routes/sound.ts` — full implementation:
+  - **macOS:** `osascript` for get/set volume + mute; `SwitchAudioSource` for device list/switch (degrades gracefully to single "Default Output" if not installed — `brew install switchaudio-osx`)
+  - **Windows:** `AudioDeviceCmdlets` PowerShell module for get/set volume, mute, device list, and switching; falls back to WASAPI inline C# (`IAudioEndpointVolume` via `MMDeviceEnumerator`) when module is not installed
+  - 5s TTL cache; cache busted on any successful mutation
+  - Routes: `GET /api/sound`, `POST /api/sound/volume`, `POST /api/sound/mute`, `POST /api/sound/device`
+- `apps/renderer/src/widgets/sound/useSound.ts` — TanStack Query hook (5s poll) + 3 mutations (volume, mute, device)
+- `apps/renderer/src/widgets/sound/SoundWidget.tsx` — widget UI:
+  - Volume slider (native range, styled) — local state while dragging, commits to API on pointer-up
+  - Click speaker icon to toggle mute; icon changes between Volume/Volume1/Volume2/VolumeX by level
+  - Device list — active device highlighted with green dot; click non-active device to switch
+
+### Changed
+- `packages/server/src/cache/SimpleCache.ts` — added `clear()` method for cache busting on mutations
+
+### Notes (Windows)
+- Volume/mute works without any extra setup via WASAPI fallback
+- Device listing + switching requires `Install-Module -Name AudioDeviceCmdlets` (run once as admin in PowerShell)
+
+---
+
 ## [PR #4] feat: stocks widget — Alpaca REST snapshots, card grid UI, editable watchlist
 **Branch:** `feature/stocks-widget` → `master`  
 **Date:** 2026-05-24

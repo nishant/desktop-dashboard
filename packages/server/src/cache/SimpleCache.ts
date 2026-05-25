@@ -10,4 +10,8 @@ export class SimpleCache<T> {
     this.data = data;
     this.expiresAt = Date.now() + ttlMs;
   }
+
+  clear(): void {
+    this.expiresAt = 0;
+  }
 }

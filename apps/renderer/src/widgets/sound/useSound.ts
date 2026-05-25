@@ -1,0 +1,37 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../lib/apiClient';
+import type { SoundData } from '@dash/shared';
+
+export function useSound() {
+  return useQuery<SoundData>({
+    queryKey: ['sound'],
+    queryFn: () => apiClient.get<SoundData>('/api/sound'),
+    refetchInterval: 5000,
+    staleTime: 4000,
+  });
+}
+
+export function useSetVolume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (volumePercent: number) =>
+      apiClient.post('/api/sound/volume', { volumePercent }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+  });
+}
+
+export function useSetMute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (muted: boolean) => apiClient.post('/api/sound/mute', { muted }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+  });
+}
+
+export function useSwitchDevice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deviceId: string) => apiClient.post('/api/sound/device', { deviceId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+  });
+}
