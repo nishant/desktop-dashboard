@@ -4,7 +4,34 @@ All changes organized by pull request, newest first.
 
 ---
 
-## [PR #5] feat: sound widget — volume, mute, device switching (macOS + Windows)
+## [PR #5] feat: sound widget — volume, mute, device switching, Windows app mixer
+**Branch:** `feature/sound-widget` → `master`  
+**Date:** 2026-05-25
+
+### Added
+- `packages/server/src/routes/sound.ts` — full implementation:
+  - **macOS:** `osascript` for get/set volume + mute; `SwitchAudioSource` for device list/switch (degrades gracefully — `brew install switchaudio-osx`)
+  - **Windows:** `AudioDeviceCmdlets` PowerShell module preferred; WASAPI inline C# fallback (`IAudioEndpointVolume` via `MMDeviceEnumerator`) when not installed
+  - **Windows app mixer:** `IAudioSessionManager2` + `IAudioSessionEnumerator` + `IAudioSessionControl2` + `ISimpleAudioVolume` to enumerate active audio sessions (one row per PID, deduped); process names resolved via single bulk `Get-Process` call
+  - New `POST /api/sound/sessions/volume` — sets volume for all sessions matching a PID
+  - 5s TTL cache; `cache.clear()` on any successful mutation
+- `packages/shared/src/types/sound.ts` — added `AudioSession` interface; added `sessions: AudioSession[]` to `SoundData`
+- `apps/renderer/src/widgets/sound/useSound.ts` — TanStack Query hook (5s poll) + mutations for volume, mute, device, session volume; all slider mutations use synchronous optimistic cache updates
+- `apps/renderer/src/widgets/sound/SoundWidget.tsx`:
+  - Master volume slider + mute toggle (icon morphs Volume→VolumeX)
+  - Output device list with active device highlighted; click to switch
+  - App Mixer section (Windows only, hidden when `sessions` is empty) — per-app sliders with process name
+  - Sliders use persistent `localValue` state synced from parent only when pointer is not down — eliminates snap-back on release regardless of API latency
+- `packages/server/src/cache/SimpleCache.ts` — added `clear()` method
+
+### Notes
+- **macOS device switching:** requires `brew install switchaudio-osx`
+- **Windows device switching:** requires `Install-Module -Name AudioDeviceCmdlets` (once, as admin); volume/mute work without it via WASAPI fallback
+- **Windows app mixer:** works without any extra setup via WASAPI
+
+---
+
+## [PR #4]
 **Branch:** `feature/sound-widget` → `master`  
 **Date:** 2026-05-25
 
