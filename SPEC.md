@@ -173,9 +173,10 @@ Renderer (React)
 # .env (never committed)
 ALPACA_API_KEY=
 ALPACA_API_SECRET=
+ALPACA_BASE_URL=https://data.alpaca.markets/v2
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
-SPOTIFY_REDIRECT_URI=http://localhost:7432/spotify/callback
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:7432/spotify/callback
 SERVER_PORT=7432
 ```
 
