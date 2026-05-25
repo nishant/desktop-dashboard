@@ -1,0 +1,21 @@
+{
+  "name": "@dash/main",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc-watch --onSuccess \"cross-env NODE_ENV=development electron .\"",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dash/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0",
+    "tsc-watch": "^6.2.1",
+    "typescript": "^5.7.0"
+  }
+}
