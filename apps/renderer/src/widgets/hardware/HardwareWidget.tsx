@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Cpu, Thermometer, HardDrive, Wifi, Battery, BatteryCharging, BarChart2, Activity } from 'lucide-react';
+import { Cpu, Thermometer, HardDrive, Wifi, Battery, BatteryCharging, BarChart2, Activity, Settings } from 'lucide-react';
 import { useHardware, type HardwareHistory } from './useHardware';
+import { useHardwareStore, type HardwareSection } from '../../store/hardwareStore';
 import type { HardwareData } from '@dash/shared';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -69,14 +70,13 @@ function CoreGrid({ coreUsage }: { coreUsage: number[] }) {
   return (
     <div className="flex flex-wrap gap-0.5 mt-1.5">
       {coreUsage.map((load, i) => (
-        <div key={i} className="flex flex-col items-center gap-0.5" style={{ width: 10 }}>
+        <div key={i} className="flex flex-col items-center" style={{ width: 10 }}>
           <div className="w-2.5 bg-zinc-800 rounded-sm overflow-hidden" style={{ height: 20 }}>
             <div
               className="w-full rounded-sm"
               style={{
                 height: `${load}%`,
                 backgroundColor: load >= 85 ? '#f87171' : load >= 60 ? '#fbbf24' : '#60a5fa',
-                marginTop: 'auto',
                 transition: 'height 0.3s',
               }}
             />
@@ -89,12 +89,8 @@ function CoreGrid({ coreUsage }: { coreUsage: number[] }) {
 
 // ── Section card ──────────────────────────────────────────────────────────
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-zinc-800/50 rounded-lg p-3 ${className}`}>
-      {children}
-    </div>
-  );
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="bg-zinc-800/50 rounded-lg p-3">{children}</div>;
 }
 
 // ── CPU card ─────────────────────────────────────────────────────────────
@@ -109,9 +105,7 @@ function CpuCard({ cpu, history, view }: { cpu: HardwareData['cpu']; history: Ha
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {cpu.tempCelsius !== null && (
-            <span className={`text-xs font-mono ${tempColor(cpu.tempCelsius)}`}>
-              {cpu.tempCelsius}°C
-            </span>
+            <span className={`text-xs font-mono ${tempColor(cpu.tempCelsius)}`}>{cpu.tempCelsius}°C</span>
           )}
           <span className="text-sm font-semibold text-white tabular-nums">{cpu.usagePercent}%</span>
         </div>
@@ -123,7 +117,7 @@ function CpuCard({ cpu, history, view }: { cpu: HardwareData['cpu']; history: Ha
         <UsageBar pct={cpu.usagePercent} color="#60a5fa" />
       )}
 
-      <div className="flex items-center justify-between mt-1.5">
+      <div className="mt-1.5">
         <span className="text-[10px] text-zinc-500">
           {cpu.physicalCores}C/{cpu.cores}T · {fmt(cpu.speedGhz)} GHz
         </span>
@@ -137,7 +131,15 @@ function CpuCard({ cpu, history, view }: { cpu: HardwareData['cpu']; history: Ha
 // ── GPU card ─────────────────────────────────────────────────────────────
 
 function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: HardwareHistory; view: ViewMode }) {
-  if (!gpu) return null;
+  if (!gpu) {
+    return (
+      <Card>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-zinc-500">No GPU detected</span>
+        </div>
+      </Card>
+    );
+  }
 
   const vramPct = gpu.vramTotalMb > 0 ? Math.round((gpu.vramUsedMb / gpu.vramTotalMb) * 100) : 0;
 
@@ -147,9 +149,7 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
         <span className="text-xs text-zinc-400 font-medium truncate max-w-[160px]">{gpu.name}</span>
         <div className="flex items-center gap-2 shrink-0">
           {gpu.tempCelsius !== null && (
-            <span className={`text-xs font-mono ${tempColor(gpu.tempCelsius)}`}>
-              {gpu.tempCelsius}°C
-            </span>
+            <span className={`text-xs font-mono ${tempColor(gpu.tempCelsius)}`}>{gpu.tempCelsius}°C</span>
           )}
           <span className="text-sm font-semibold text-white tabular-nums">{gpu.usagePercent}%</span>
         </div>
@@ -183,17 +183,15 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
 // ── RAM card ──────────────────────────────────────────────────────────────
 
 function RamCard({ ram, history, view }: { ram: HardwareData['ram']; history: HardwareHistory; view: ViewMode }) {
-  const totalGb = ram.totalMb / 1024;
   const usedGb = ram.usedMb / 1024;
+  const totalGb = ram.totalMb / 1024;
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-zinc-400 font-medium">RAM</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-500 tabular-nums">
-            {fmt(usedGb)} / {fmt(totalGb, 0)} GB
-          </span>
+          <span className="text-[10px] text-zinc-500 tabular-nums">{fmt(usedGb)} / {fmt(totalGb, 0)} GB</span>
           <span className="text-sm font-semibold text-white tabular-nums">{ram.usagePercent}%</span>
         </div>
       </div>
@@ -210,10 +208,7 @@ function RamCard({ ram, history, view }: { ram: HardwareData['ram']; history: Ha
             <span>Swap</span>
             <span>{fmt(ram.swapUsedMb / 1024)} / {fmt(ram.swapTotalMb / 1024)} GB</span>
           </div>
-          <UsageBar
-            pct={Math.round((ram.swapUsedMb / ram.swapTotalMb) * 100)}
-            color="#f59e0b"
-          />
+          <UsageBar pct={Math.round((ram.swapUsedMb / ram.swapTotalMb) * 100)} color="#f59e0b" />
         </div>
       )}
     </Card>
@@ -228,8 +223,7 @@ function DiskCard({ disks, diskUsage, history, view }: {
   history: HardwareHistory;
   view: ViewMode;
 }) {
-  const d = disks[0];
-  if (!d) return null;
+  const d = disks[0] ?? { readMBs: 0, writeMBs: 0 };
 
   return (
     <Card>
@@ -305,29 +299,95 @@ function NetworkCard({ network, history, view }: {
           ))}
         </div>
       )}
+
+      {network.length === 0 && (
+        <span className="text-[10px] text-zinc-600">No active interfaces</span>
+      )}
     </Card>
   );
 }
 
 // ── Battery row ───────────────────────────────────────────────────────────
 
-function BatteryRow({ battery }: { battery: NonNullable<HardwareData['battery']> }) {
+function BatteryCard({ battery }: { battery: NonNullable<HardwareData['battery']> }) {
   const Icon = battery.charging ? BatteryCharging : Battery;
-  const color = battery.percent <= 20 ? 'text-red-400' : battery.percent <= 40 ? 'text-amber-400' : 'text-emerald-400';
+  const pctColor = battery.percent <= 20 ? '#f87171' : battery.percent <= 40 ? '#fbbf24' : '#34d399';
+  const textColor = battery.percent <= 20 ? 'text-red-400' : battery.percent <= 40 ? 'text-amber-400' : 'text-emerald-400';
+
   return (
     <Card>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <Icon size={12} className={color} />
+          <Icon size={12} className={textColor} />
           <span className="text-xs text-zinc-400">Battery</span>
           {battery.charging && <span className="text-[10px] text-emerald-400">Charging</span>}
         </div>
-        <span className={`text-sm font-semibold tabular-nums ${color}`}>{battery.percent}%</span>
+        <span className={`text-sm font-semibold tabular-nums ${textColor}`}>{battery.percent}%</span>
       </div>
-      <div className="mt-1.5">
-        <UsageBar pct={battery.percent} color={battery.percent <= 20 ? '#f87171' : battery.percent <= 40 ? '#fbbf24' : '#34d399'} />
-      </div>
+      <UsageBar pct={battery.percent} color={pctColor} />
     </Card>
+  );
+}
+
+// ── No-battery placeholder ────────────────────────────────────────────────
+
+function NoBatteryCard() {
+  return (
+    <Card>
+      <span className="text-xs text-zinc-500">No battery</span>
+    </Card>
+  );
+}
+
+// ── Config panel ──────────────────────────────────────────────────────────
+
+const SECTION_LABELS: Record<HardwareSection, string> = {
+  cpu: 'CPU',
+  gpu: 'GPU',
+  ram: 'RAM',
+  disk: 'Disk',
+  network: 'Network',
+  battery: 'Battery',
+};
+
+function ConfigPanel({
+  visible,
+  setVisible,
+}: {
+  visible: Record<HardwareSection, boolean>;
+  setVisible: (s: HardwareSection, v: boolean) => void;
+}) {
+  const sections = Object.keys(SECTION_LABELS) as HardwareSection[];
+  return (
+    <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
+      <p className="text-[10px] text-zinc-500 mb-2 uppercase tracking-wide">Visible sections</p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {sections.map((section) => (
+          <label key={section} className="flex items-center gap-2 cursor-pointer group">
+            <div
+              onClick={() => setVisible(section, !visible[section])}
+              className={`w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
+                visible[section]
+                  ? 'bg-zinc-300 border-zinc-300'
+                  : 'bg-transparent border-zinc-600 group-hover:border-zinc-400'
+              }`}
+            >
+              {visible[section] && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4l2.5 2.5L9 1" stroke="#18181b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <span
+              onClick={() => setVisible(section, !visible[section])}
+              className="text-xs text-zinc-400 select-none"
+            >
+              {SECTION_LABELS[section]}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -335,7 +395,9 @@ function BatteryRow({ battery }: { battery: NonNullable<HardwareData['battery']>
 
 export function HardwareWidget() {
   const { query, history } = useHardware();
+  const { visible, setVisible } = useHardwareStore();
   const [view, setView] = useState<ViewMode>('bars');
+  const [configOpen, setConfigOpen] = useState(false);
 
   if (query.isLoading) {
     return (
@@ -363,49 +425,56 @@ export function HardwareWidget() {
           <Cpu size={14} className="text-zinc-400" />
           <span className="text-sm font-semibold text-zinc-200">Hardware</span>
         </div>
-        <div className="flex items-center gap-1 bg-zinc-800 rounded-md p-0.5">
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 bg-zinc-800 rounded-md p-0.5">
+            <button
+              onClick={() => setView('bars')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
+                view === 'bars' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <BarChart2 size={10} />
+              Bars
+            </button>
+            <button
+              onClick={() => setView('sparks')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
+                view === 'sparks' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Activity size={10} />
+              Sparks
+            </button>
+          </div>
           <button
-            onClick={() => setView('bars')}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
-              view === 'bars'
-                ? 'bg-zinc-700 text-zinc-100'
-                : 'text-zinc-500 hover:text-zinc-300'
+            onClick={() => setConfigOpen((o) => !o)}
+            className={`p-1 rounded transition-colors ${
+              configOpen ? 'text-zinc-200 bg-zinc-700' : 'text-zinc-500 hover:text-zinc-300'
             }`}
           >
-            <BarChart2 size={10} />
-            Bars
-          </button>
-          <button
-            onClick={() => setView('sparks')}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
-              view === 'sparks'
-                ? 'bg-zinc-700 text-zinc-100'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Activity size={10} />
-            Sparks
+            <Settings size={13} />
           </button>
         </div>
       </div>
 
-      {/* Cards */}
-      <CpuCard cpu={d.cpu} history={history} view={view} />
-      <GpuCard gpu={d.gpu} history={history} view={view} />
-      <RamCard ram={d.ram} history={history} view={view} />
-      <DiskCard disks={d.disks} diskUsage={d.diskUsage} history={history} view={view} />
-      {d.network.length > 0 && <NetworkCard network={d.network} history={history} view={view} />}
-      {d.battery && <BatteryRow battery={d.battery} />}
+      {/* Config panel */}
+      {configOpen && <ConfigPanel visible={visible} setVisible={setVisible} />}
+
+      {/* Cards — always rendered when their section is visible */}
+      {visible.cpu && <CpuCard cpu={d.cpu} history={history} view={view} />}
+      {visible.gpu && <GpuCard gpu={d.gpu} history={history} view={view} />}
+      {visible.ram && <RamCard ram={d.ram} history={history} view={view} />}
+      {visible.disk && <DiskCard disks={d.disks} diskUsage={d.diskUsage} history={history} view={view} />}
+      {visible.network && <NetworkCard network={d.network} history={history} view={view} />}
+      {visible.battery && (d.battery ? <BatteryCard battery={d.battery} /> : <NoBatteryCard />)}
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-0.5 shrink-0">
+      <div className="flex items-center justify-between px-0.5 shrink-0 mt-auto pt-1">
         <div className="flex items-center gap-1">
           <Thermometer size={10} className="text-zinc-600" />
           <span className="text-[10px] text-zinc-600">Uptime {fmtUptime(d.uptime)}</span>
         </div>
-        {query.isFetching && (
-          <span className="text-[10px] text-zinc-700">updating…</span>
-        )}
+        {query.isFetching && <span className="text-[10px] text-zinc-700">updating…</span>}
       </div>
     </div>
   );

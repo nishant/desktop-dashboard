@@ -131,15 +131,17 @@ async function buildHardwareData(): Promise<HardwareData> {
     .slice(0, 6); // cap at 6 entries
 
   // ── Network ───────────────────────────────────────────────────────────
+  // Sort most-active first so primary interface leads; never filter by traffic
+  // so the card stays visible even when idle.
   const network: NetworkIo[] = (netStats as si.Systeminformation.NetworkStatsData[])
     .filter((n) => isRealIface(n.iface) && n.operstate !== 'down')
+    .sort((a, b) => (b.rx_sec + b.tx_sec) - (a.rx_sec + a.tx_sec))
+    .slice(0, 3)
     .map((n) => ({
       iface: n.iface,
       uploadMbps: parseFloat(((n.tx_sec ?? 0) * 8 / 1_000_000).toFixed(2)),
       downloadMbps: parseFloat(((n.rx_sec ?? 0) * 8 / 1_000_000).toFixed(2)),
-    }))
-    .filter((n) => n.uploadMbps > 0 || n.downloadMbps > 0)
-    .slice(0, 4);
+    }));
 
   // ── Battery ───────────────────────────────────────────────────────────
   let battery: HardwareData['battery'] = null;
