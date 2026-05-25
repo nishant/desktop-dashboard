@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { TrackData, SpotifyAuthStatus } from '@dash/shared';
+import type { TrackData, SpotifyAuthStatus, SpotifyPlaylist, SpotifyDevice } from '@dash/shared';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -60,7 +60,13 @@ function generatePkce(): { verifier: string; challenge: string; state: string } 
 
 const SPOTIFY_ACCOUNTS = 'https://accounts.spotify.com';
 const SPOTIFY_API = 'https://api.spotify.com/v1';
-const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
+const SCOPES = [
+  'user-read-playback-state',
+  'user-modify-playback-state',
+  'user-read-currently-playing',
+  'playlist-read-private',
+  'playlist-read-collaborative',
+].join(' ');
 
 function clientId(): string {
   return process.env.SPOTIFY_CLIENT_ID ?? '';
@@ -158,10 +164,11 @@ async function spotifyRequest(
   });
 }
 
-// ── Now-playing cache ─────────────────────────────────────────────────────────
-// 2.5s TTL — renderer polls every 3s
+// ── Caches ────────────────────────────────────────────────────────────────────
 
-const nowPlayingCache = new SimpleCache<TrackData>();
+const nowPlayingCache = new SimpleCache<TrackData>();          // 2.5s — renderer polls every 3s
+const playlistsCache = new SimpleCache<SpotifyPlaylist[]>();   // 30s — changes rarely
+const devicesCache = new SimpleCache<SpotifyDevice[]>();       // 5s — active device flips quickly
 
 const NOT_PLAYING: TrackData = {
   isPlaying: false,
@@ -391,6 +398,107 @@ export const spotifyRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       await spotifyRequest('PUT', `/me/player/repeat?state=${req.body.state}`);
       nowPlayingCache.clear();
+      return reply.code(204).send();
+    } catch (err) {
+      return reply.code(502).send({ error: String(err) });
+    }
+  });
+
+  // GET /api/spotify/playlists
+  fastify.get<{ Reply: SpotifyPlaylist[] | { error: string } }>('/playlists', async (_req, reply) => {
+    const cached = playlistsCache.get();
+    if (cached) return reply.send(cached);
+
+    try {
+      const res = await spotifyRequest('GET', '/me/playlists?limit=50');
+      if (!res.ok) throw new Error(`Spotify playlists API ${res.status}`);
+
+      const d = await res.json() as {
+        items: {
+          id: string;
+          name: string;
+          images: { url: string; width: number | null }[];
+          tracks: { total: number };
+          uri: string;
+        }[];
+      };
+
+      const playlists: SpotifyPlaylist[] = (d.items ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        imageUrl: p.images?.[0]?.url ?? null,
+        trackCount: p.tracks?.total ?? 0,
+        uri: p.uri,
+      }));
+
+      playlistsCache.set(playlists, 30_000);
+      return reply.send(playlists);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.error(`[spotify] playlists: ${msg}`);
+      return reply.code(502).send({ error: msg });
+    }
+  });
+
+  // GET /api/spotify/devices
+  fastify.get<{ Reply: SpotifyDevice[] | { error: string } }>('/devices', async (_req, reply) => {
+    const cached = devicesCache.get();
+    if (cached) return reply.send(cached);
+
+    try {
+      const res = await spotifyRequest('GET', '/me/player/devices');
+      if (!res.ok) throw new Error(`Spotify devices API ${res.status}`);
+
+      const d = await res.json() as {
+        devices: {
+          id: string;
+          name: string;
+          type: string;
+          is_active: boolean;
+          volume_percent: number | null;
+        }[];
+      };
+
+      const devices: SpotifyDevice[] = (d.devices ?? []).map((dev) => ({
+        id: dev.id,
+        name: dev.name,
+        type: dev.type,
+        isActive: dev.is_active,
+        volumePercent: dev.volume_percent,
+      }));
+
+      devicesCache.set(devices, 5_000);
+      return reply.send(devices);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.error(`[spotify] devices: ${msg}`);
+      return reply.code(502).send({ error: msg });
+    }
+  });
+
+  // POST /api/spotify/play-context  body: { contextUri: string; deviceId?: string }
+  fastify.post<{ Body: { contextUri: string; deviceId?: string } }>('/play-context', async (req, reply) => {
+    try {
+      const { contextUri, deviceId } = req.body;
+      const qs = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+      const res = await spotifyRequest('PUT', `/me/player/play${qs}`, {
+        context_uri: contextUri,
+        offset: { position: 0 },
+        position_ms: 0,
+      });
+
+      // 204 = success, 202 = accepted (device waking), 404 = no active device
+      if (res.status === 404) {
+        devicesCache.clear();
+        return reply.code(404).send({ error: 'No active device — open Spotify on a device first' });
+      }
+      if (!res.ok && res.status !== 202) {
+        const body = await res.text();
+        return reply.code(502).send({ error: `Spotify ${res.status}: ${body}` });
+      }
+
+      nowPlayingCache.clear();
+      devicesCache.clear();
       return reply.code(204).send();
     } catch (err) {
       return reply.code(502).send({ error: String(err) });

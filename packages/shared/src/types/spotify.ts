@@ -15,3 +15,19 @@ export interface TrackData {
 export interface SpotifyAuthStatus {
   authenticated: boolean;
 }
+
+export interface SpotifyPlaylist {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  trackCount: number;
+  uri: string;
+}
+
+export interface SpotifyDevice {
+  id: string;
+  name: string;
+  type: string; // 'Computer' | 'Smartphone' | 'Speaker' | ...
+  isActive: boolean;
+  volumePercent: number | null;
+}

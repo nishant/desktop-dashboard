@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/apiClient';
-import type { TrackData, SpotifyAuthStatus } from '@dash/shared';
+import type { TrackData, SpotifyAuthStatus, SpotifyPlaylist, SpotifyDevice } from '@dash/shared';
 
 export function useSpotifyStatus() {
   return useQuery<SpotifyAuthStatus>({
@@ -29,15 +29,34 @@ export function useSpotifyAuthUrl() {
   });
 }
 
+export function usePlaylists(enabled: boolean) {
+  return useQuery<SpotifyPlaylist[]>({
+    queryKey: ['spotify-playlists'],
+    queryFn: () => apiClient.get<SpotifyPlaylist[]>('/api/spotify/playlists'),
+    enabled,
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useDevices(enabled: boolean) {
+  return useQuery<SpotifyDevice[]>({
+    queryKey: ['spotify-devices'],
+    queryFn: () => apiClient.get<SpotifyDevice[]>('/api/spotify/devices'),
+    enabled,
+    refetchInterval: 8_000,
+    staleTime: 5_000,
+  });
+}
+
 // ── Playback mutations ────────────────────────────────────────────────────────
 
-function usePlaybackMutation(endpoint: string, body?: unknown) {
+function usePlaybackMutation(endpoint: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => apiClient.post(endpoint, body),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
-    },
+    mutationFn: () => apiClient.post(endpoint),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
   });
 }
 
@@ -126,5 +145,17 @@ export function useRepeat() {
       );
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
+  });
+}
+
+export function usePlayContext() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contextUri, deviceId }: { contextUri: string; deviceId?: string }) =>
+      apiClient.post('/api/spotify/play-context', { contextUri, deviceId }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
+      void qc.invalidateQueries({ queryKey: ['spotify-devices'] });
+    },
   });
 }
