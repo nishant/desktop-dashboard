@@ -13,6 +13,5 @@ export interface StockQuote {
 
 export interface StocksData {
   equities: StockQuote[];
-  futures: StockQuote[];
   updatedAt: string;
 }

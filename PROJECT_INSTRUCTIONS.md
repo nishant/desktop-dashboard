@@ -21,7 +21,7 @@ A personal ambient desktop dashboard app for Nish, running all day on a secondar
 ## Widgets & APIs
 - **Weather:** Open-Meteo (no key), Austin TX hardcoded, 15min poll
 - **Spotify:** Spotify Web API, PKCE OAuth, 3s REST poll, safeStorage for tokens
-- **Stocks/Futures:** Polygon.io (POLYGON_API_KEY), WebSocket for equities, /ES and /MGC futures, market hours awareness
+- **Stocks:** Alpaca Markets (ALPACA_API_KEY + ALPACA_API_SECRET), WebSocket IEX feed for equities, market hours awareness (no futures)
 - **Hardware:** systeminformation npm package, 1s poll, sparklines
 - **Sound:** PowerShell on Windows, osascript on macOS, 5s poll
 

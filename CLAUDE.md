@@ -25,7 +25,7 @@ Personal ambient desktop dashboard for Nish, running all day on a secondary moni
 |---|---|---|---|
 | Weather | Open-Meteo | none | 15min |
 | Spotify | Spotify Web API | PKCE OAuth | 3s REST |
-| Stocks | Polygon.io WebSocket | POLYGON_API_KEY | real-time / 5s fallback |
+| Stocks | Alpaca Markets WebSocket (IEX) | ALPACA_API_KEY + ALPACA_API_SECRET | real-time / 5s fallback |
 | Hardware | systeminformation | none | 1s |
 | Sound | PowerShell (Win) / osascript (mac) | none | 5s |
 

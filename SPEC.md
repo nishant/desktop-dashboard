@@ -113,15 +113,15 @@ dashboard/
 - **Poll interval:** 3 seconds (REST polling, not WebSocket)
 - **Scopes needed:** `user-read-playback-state`, `user-modify-playback-state`, `user-read-currently-playing`
 
-### 3. Stocks & Options & Futures
-- **API:** Polygon.io
-- **Auth:** API key via `.env`
+### 3. Stocks
+- **API:** Alpaca Markets
+- **Auth:** API key + secret via `.env` (`ALPACA_API_KEY`, `ALPACA_API_SECRET`)
 - **Tickers to display:** Configurable list in user config file
 - **Data per ticker:** Last price, change $, change %, bid, ask, volume, day high/low
-- **Futures:** /ES (S&P 500), /MGC (Micro Gold) via Polygon futures endpoint
-- **Real-time:** Polygon WebSocket (`wss://socket.polygon.io/stocks`) for equity quotes
-- **Poll fallback:** REST every 5s if WebSocket disconnects
+- **Real-time:** Alpaca WebSocket (`wss://stream.data.alpaca.markets/v2/iex`) for equity quotes
+- **Poll fallback:** REST every 5s if WebSocket disconnects (`https://data.alpaca.markets/v2`)
 - **Market hours awareness:** Show "Market Closed" state outside RTH; display last close price
+- **Note:** IEX feed (free tier) — real-time prices from IEX exchange, no futures data
 
 ### 4. Hardware Usage
 - **Library:** `systeminformation` npm package
@@ -155,7 +155,7 @@ Renderer (React)
               └── Fastify server
                     ├── Weather    → Open-Meteo REST
                     ├── Spotify    → Spotify Web API REST
-                    ├── Stocks     → Polygon WebSocket (persistent connection)
+                    ├── Stocks     → Alpaca WebSocket IEX (persistent connection)
                     ├── Hardware   → systeminformation (local)
                     └── Sound      → child_process (PowerShell / osascript)
 
@@ -171,7 +171,8 @@ Renderer (React)
 
 ```env
 # .env (never committed)
-POLYGON_API_KEY=
+ALPACA_API_KEY=
+ALPACA_API_SECRET=
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
 SPOTIFY_REDIRECT_URI=http://localhost:7432/spotify/callback
@@ -197,8 +198,8 @@ Secrets loaded by Fastify server only. Renderer never sees them.
 
 | Widget | Method | Interval |
 |---|---|---|
-| Stocks (equity) | Polygon WebSocket | Real-time |
-| Stocks (fallback) | REST | 5s |
+| Stocks (equity) | Alpaca WebSocket IEX | Real-time |
+| Stocks (fallback) | Alpaca REST | 5s |
 | Spotify | REST | 3s |
 | Hardware | systeminformation | 1s |
 | Weather | REST | 15min |
