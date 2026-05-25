@@ -1,6 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/apiClient';
-import type { TrackData, SpotifyAuthStatus, SpotifyPlaylist, SpotifyDevice } from '@dash/shared';
+import type {
+  TrackData, SpotifyAuthStatus,
+  SpotifyPlaylistsPage, SpotifyTracksPage, SpotifyDevice,
+} from '@dash/shared';
 
 export function useSpotifyStatus() {
   return useQuery<SpotifyAuthStatus>({
@@ -24,18 +27,43 @@ export function useSpotifyAuthUrl() {
   return useQuery<{ url: string }>({
     queryKey: ['spotify-auth-url'],
     queryFn: () => apiClient.get<{ url: string }>('/api/spotify/auth-url'),
-    enabled: false, // only fetch on demand
+    enabled: false,
     staleTime: 0,
   });
 }
 
-export function usePlaylists(enabled: boolean) {
-  return useQuery<SpotifyPlaylist[]>({
+// 20 playlists per page — fast initial load, scroll for more
+export function usePlaylistsInfinite(enabled: boolean) {
+  return useInfiniteQuery<SpotifyPlaylistsPage>({
     queryKey: ['spotify-playlists'],
-    queryFn: () => apiClient.get<SpotifyPlaylist[]>('/api/spotify/playlists'),
+    queryFn: ({ pageParam }) =>
+      apiClient.get<SpotifyPlaylistsPage>(`/api/spotify/playlists?offset=${pageParam as number}&limit=20`),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.offset + lastPage.limit;
+      return next < lastPage.total ? next : undefined;
+    },
     enabled,
-    refetchInterval: 30_000,
     staleTime: 25_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+// 100 tracks per page as requested
+export function usePlaylistTracksInfinite(playlistId: string | null) {
+  return useInfiniteQuery<SpotifyTracksPage>({
+    queryKey: ['spotify-playlist-tracks', playlistId],
+    queryFn: ({ pageParam }) =>
+      apiClient.get<SpotifyTracksPage>(
+        `/api/spotify/playlist-tracks?playlistId=${playlistId}&offset=${pageParam as number}&limit=100`,
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.offset + lastPage.limit;
+      return next < lastPage.total ? next : undefined;
+    },
+    enabled: playlistId !== null,
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
 }
@@ -51,14 +79,6 @@ export function useDevices(enabled: boolean) {
 }
 
 // ── Playback mutations ────────────────────────────────────────────────────────
-
-function usePlaybackMutation(endpoint: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => apiClient.post(endpoint),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
-  });
-}
 
 export function usePlay() {
   const qc = useQueryClient();
@@ -87,11 +107,19 @@ export function usePause() {
 }
 
 export function useNext() {
-  return usePlaybackMutation('/api/spotify/next');
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post('/api/spotify/next'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
+  });
 }
 
 export function usePrevious() {
-  return usePlaybackMutation('/api/spotify/previous');
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post('/api/spotify/previous'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
+  });
 }
 
 export function useSeek() {
@@ -151,11 +179,22 @@ export function useRepeat() {
 export function usePlayContext() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ contextUri, deviceId }: { contextUri: string; deviceId?: string }) =>
-      apiClient.post('/api/spotify/play-context', { contextUri, deviceId }),
+    mutationFn: (args: { contextUri: string; deviceId?: string; shuffle?: boolean }) =>
+      apiClient.post('/api/spotify/play-context', args),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
       void qc.invalidateQueries({ queryKey: ['spotify-devices'] });
+    },
+  });
+}
+
+export function usePlayTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { trackUri: string; contextUri?: string; deviceId?: string }) =>
+      apiClient.post('/api/spotify/play-track', args),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
     },
   });
 }
