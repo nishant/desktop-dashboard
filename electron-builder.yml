@@ -1,0 +1,37 @@
+appId: com.nish.desktop-dashboard
+productName: Dashboard
+copyright: Copyright © 2025 Nish
+
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - from: apps/main/dist
+    to: .
+    filter: ["**/*"]
+  - from: apps/renderer/dist
+    to: renderer
+    filter: ["**/*"]
+  - from: packages/server/dist
+    to: server
+    filter: ["**/*"]
+  - from: packages/shared/dist
+    to: shared
+    filter: ["**/*"]
+  - node_modules/**
+
+# TODO: server node_modules need to be bundled for production
+# Consider using electron-builder's extraResources or bundling server with esbuild
+
+win:
+  target: nsis
+  icon: build/icon.ico
+
+mac:
+  target: dmg
+  icon: build/icon.icns
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
