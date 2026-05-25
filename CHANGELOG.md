@@ -4,6 +4,28 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #3] feat: weather widget — Open-Meteo, 15-min cache, full forecast UI
+**Branch:** `feature/weather-widget` → `master`  
+**Date:** 2026-05-24
+
+### Added
+- `packages/server/src/cache/SimpleCache.ts` — generic in-memory TTL cache used by weather (and future widgets)
+- `packages/server/src/routes/weather.ts` — fetches Open-Meteo API, transforms to `WeatherData`, caches 15 min
+  - Austin TX hardcoded (lat: 30.2672, lon: -97.7431)
+  - Returns: current conditions, next 12 hourly entries from now, 5-day daily forecast
+  - Temperature in °F, wind in mph, timezone `America/Chicago`
+- `apps/renderer/src/widgets/weather/useWeather.ts` — TanStack Query hook, 15-min `refetchInterval` + `staleTime`
+- `apps/renderer/src/widgets/weather/weatherCodes.ts` — WMO weather code → `{ label, icon }` map covering all standard codes
+- `apps/renderer/src/widgets/weather/WeatherIcon.tsx` — maps icon key to lucide-react component
+- `apps/renderer/src/widgets/weather/WeatherWidget.tsx` — full widget UI:
+  - Large current temp + condition label + lucide weather icon
+  - 4-stat row: humidity, wind speed, precip chance, UV index
+  - Feels-like line
+  - Horizontal scrollable hourly strip (next 12h) with precip % shown when >20%
+  - 5-day daily strip with precip bar and high/low temps
+
+---
+
 ## [PR #2] feat: layout engine — resizable/draggable grid with presets
 **Branch:** `feature/layout-engine` → `master`  
 **Date:** 2026-05-24
