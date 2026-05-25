@@ -1,12 +1,12 @@
 export type IpcChannels =
   | 'app:minimize'
   | 'app:close'
-  | 'spotify:auth-start'
+  | 'spotify:open-auth'
   | 'spotify:token-store';
 
 export interface ElectronAPI {
   minimize: () => void;
   close: () => void;
-  startSpotifyAuth: () => void;
+  openSpotifyAuth: (url: string) => void;
   onSpotifyTokenStored: (cb: () => void) => () => void;
 }
