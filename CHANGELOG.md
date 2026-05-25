@@ -4,32 +4,35 @@ All changes organized by pull request, newest first.
 
 ---
 
-## [PR #4] feat: stocks widget — Alpaca IEX WebSocket + REST snapshot fallback
+## [PR #4] feat: stocks widget — Alpaca REST snapshots, card grid UI, editable watchlist
 **Branch:** `feature/stocks-widget` → `master`  
 **Date:** 2026-05-24
 
 ### Added
-- `packages/server/src/services/alpacaWs.ts` — persistent WebSocket client to `wss://stream.data.alpaca.markets/v2/iex`
-  - Subscribes to trades + quotes for all configured tickers
-  - Auto-reconnects after disconnect (5s backoff)
-  - Handler registration via `onQuote` / `onTrade` with unsubscribe return value
-- `packages/server/src/services/stocksService.ts` — merges WS real-time data with Alpaca snapshot REST fallback
-  - Default tickers: `AAPL`, `MSFT`, `GOOGL`, `AMZN`, `NVDA`, `TSLA`, `SPY`, `QQQ`
-  - Snapshot endpoint: `GET /v2/stocks/snapshots?symbols=...&feed=iex` (5s TTL)
-  - WS trade prices take precedence over snapshot last trade price
-  - WS quotes (bid/ask) take precedence over snapshot quote
-  - `prevDailyBar.c` used to calculate change $ and change %
-  - Market-hours detection via `Intl.DateTimeFormat` with `America/New_York` timezone (Mon–Fri, 9:30–16:00 ET)
-- `apps/renderer/src/widgets/stocks/useStocks.ts` — TanStack Query hook, 5s `refetchInterval` + `staleTime`
+- `packages/server/src/routes/stocks.ts` — Alpaca IEX REST implementation:
+  - Accepts `?symbols=` query param (comma-separated, max 50); defaults to `SPY,QQQ,AAPL,MSFT,NVDA,TSLA,GOOGL,AMZN`
+  - Fetches snapshots + 5-minute bars in parallel; bars non-critical (returns empty on failure)
+  - Uses `dailyBar.c` as last price, `prevDailyBar.c` as prev close for stable change calculation
+  - Market-hours detection via `Intl.DateTimeFormat` with `America/New_York` timezone
+  - 5s in-memory cache per symbol set
+- `apps/renderer/src/store/stocksStore.ts` — Zustand persist store for watchlist (localStorage)
+- `apps/renderer/src/widgets/stocks/useStocks.ts` — TanStack Query, 5s refetch, passes watchlist as query param
 - `apps/renderer/src/widgets/stocks/StocksWidget.tsx` — full widget UI:
-  - Status bar: animated green dot "Market Open" or "Market Closed", last-updated timestamp
-  - Scrollable table: ticker (with "CLO" badge when closed), last price, change $ (change %), bid, ask, day range, volume
-  - Columns progressively hidden on narrower widget widths (bid/ask hidden below `lg`, range/vol hidden below `xl`)
-  - Positive change in emerald, negative in red
+  - 2-column card grid matching mockup
+  - Each card: triangle indicator, ticker, % change (top), Recharts area sparkline (middle), price + dollar change (bottom)
+  - Pencil button in header opens watchlist edit modal (add/remove tickers, persisted)
+  - Market Open / Market Closed status with animated dot
+  - Green/red theming per card based on daily change
 
 ### Changed
-- `packages/server/src/routes/stocks.ts` — replaced 501 stub with live implementation; starts WebSocket via `onReady` Fastify hook
-- `packages/server/package.json` — added `ws@^8` + `@types/ws` dev dep
+- `packages/shared/src/types/stocks.ts` — added `sparkline: number[]` to `StockQuote`
+
+### Removed
+- `packages/server/src/services/alpacaWs.ts` — WebSocket approach dropped (replaced by REST-only)
+- `packages/server/src/services/stocksService.ts` — consolidated into route file
+
+### Notes
+- Alpaca IEX feed: US equities only. Futures (MES=F, MGC=F) and crypto (BTC-USD) are not supported; the watchlist edit modal surfaces this caveat
 
 ---
 
