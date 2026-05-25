@@ -16,8 +16,8 @@ export function useSetVolume() {
   return useMutation({
     mutationFn: (volumePercent: number) =>
       apiClient.post('/api/sound/volume', { volumePercent }),
-    onMutate: async (volumePercent) => {
-      await qc.cancelQueries({ queryKey: ['sound'] });
+    onMutate: (volumePercent) => {
+      void qc.cancelQueries({ queryKey: ['sound'] });
       const previous = qc.getQueryData<SoundData>(['sound']);
       qc.setQueryData<SoundData>(['sound'], (old) =>
         old ? { ...old, volumePercent } : old,
@@ -52,8 +52,8 @@ export function useSetSessionVolume() {
   return useMutation({
     mutationFn: ({ pid, volumePercent }: { pid: number; volumePercent: number }) =>
       apiClient.post('/api/sound/sessions/volume', { pid, volumePercent }),
-    onMutate: async ({ pid, volumePercent }) => {
-      await qc.cancelQueries({ queryKey: ['sound'] });
+    onMutate: ({ pid, volumePercent }) => {
+      void qc.cancelQueries({ queryKey: ['sound'] });
       const previous = qc.getQueryData<SoundData>(['sound']);
       qc.setQueryData<SoundData>(['sound'], (old) =>
         old
