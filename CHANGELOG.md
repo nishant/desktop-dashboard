@@ -4,6 +4,35 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #4] feat: stocks widget — Alpaca IEX WebSocket + REST snapshot fallback
+**Branch:** `feature/stocks-widget` → `master`  
+**Date:** 2026-05-24
+
+### Added
+- `packages/server/src/services/alpacaWs.ts` — persistent WebSocket client to `wss://stream.data.alpaca.markets/v2/iex`
+  - Subscribes to trades + quotes for all configured tickers
+  - Auto-reconnects after disconnect (5s backoff)
+  - Handler registration via `onQuote` / `onTrade` with unsubscribe return value
+- `packages/server/src/services/stocksService.ts` — merges WS real-time data with Alpaca snapshot REST fallback
+  - Default tickers: `AAPL`, `MSFT`, `GOOGL`, `AMZN`, `NVDA`, `TSLA`, `SPY`, `QQQ`
+  - Snapshot endpoint: `GET /v2/stocks/snapshots?symbols=...&feed=iex` (5s TTL)
+  - WS trade prices take precedence over snapshot last trade price
+  - WS quotes (bid/ask) take precedence over snapshot quote
+  - `prevDailyBar.c` used to calculate change $ and change %
+  - Market-hours detection via `Intl.DateTimeFormat` with `America/New_York` timezone (Mon–Fri, 9:30–16:00 ET)
+- `apps/renderer/src/widgets/stocks/useStocks.ts` — TanStack Query hook, 5s `refetchInterval` + `staleTime`
+- `apps/renderer/src/widgets/stocks/StocksWidget.tsx` — full widget UI:
+  - Status bar: animated green dot "Market Open" or "Market Closed", last-updated timestamp
+  - Scrollable table: ticker (with "CLO" badge when closed), last price, change $ (change %), bid, ask, day range, volume
+  - Columns progressively hidden on narrower widget widths (bid/ask hidden below `lg`, range/vol hidden below `xl`)
+  - Positive change in emerald, negative in red
+
+### Changed
+- `packages/server/src/routes/stocks.ts` — replaced 501 stub with live implementation; starts WebSocket via `onReady` Fastify hook
+- `packages/server/package.json` — added `ws@^8` + `@types/ws` dev dep
+
+---
+
 ## [PR #3] feat: weather widget — Open-Meteo, 15-min cache, full forecast UI
 **Branch:** `feature/weather-widget` → `master`  
 **Date:** 2026-05-24
