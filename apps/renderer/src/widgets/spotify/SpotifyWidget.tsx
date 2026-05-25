@@ -3,8 +3,9 @@ import {
   Play, Pause, SkipForward, SkipBack,
   Shuffle, Repeat, Repeat1, Volume2, VolumeX,
   Music, ListMusic, ArrowLeft, Monitor, Smartphone, Speaker,
-  Heart, RotateCcw, RotateCw, Mic2,
+  Heart, RotateCcw, RotateCw, Mic2, Search,
 } from 'lucide-react';
+import { SpotifySearchDialog } from './SpotifySearchDialog';
 import {
   useSpotifyStatus, useNowPlaying, useSpotifyAuthUrl,
   usePlay, usePause, useNext, usePrevious,
@@ -645,6 +646,7 @@ export function SpotifyWidget() {
   const nowPlaying = useNowPlaying();
   const authUrlQuery = useSpotifyAuthUrl();
   const [showPlaylists, setShowPlaylists] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const handleConnect = useCallback(async () => {
     const result = await authUrlQuery.refetch();
@@ -671,21 +673,32 @@ export function SpotifyWidget() {
   const hasTrack = Boolean(track?.trackId);
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden">
-      <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
-        <div className="w-2 h-2 rounded-full bg-[#1DB954]" />
-        <span className="text-zinc-400 text-xs font-medium tracking-wide uppercase">Spotify</span>
+    <>
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden">
+        <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
+          <div className="w-2 h-2 rounded-full bg-[#1DB954]" />
+          <span className="text-zinc-400 text-xs font-medium tracking-wide uppercase">Spotify</span>
+          <button
+            onClick={() => setShowSearch(true)}
+            className="ml-auto text-zinc-500 hover:text-zinc-200 transition-colors"
+            title="Search (tracks & podcasts)"
+          >
+            <Search size={13} />
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0">
+          {showPlaylists ? (
+            <PlaylistPanel onBack={() => setShowPlaylists(false)} />
+          ) : hasTrack ? (
+            <NowPlayingView data={track!} onOpenPlaylists={() => setShowPlaylists(true)} />
+          ) : (
+            <NotPlayingView onOpenPlaylists={() => setShowPlaylists(true)} />
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 min-h-0">
-        {showPlaylists ? (
-          <PlaylistPanel onBack={() => setShowPlaylists(false)} />
-        ) : hasTrack ? (
-          <NowPlayingView data={track!} onOpenPlaylists={() => setShowPlaylists(true)} />
-        ) : (
-          <NotPlayingView onOpenPlaylists={() => setShowPlaylists(true)} />
-        )}
-      </div>
-    </div>
+      <SpotifySearchDialog open={showSearch} onClose={() => setShowSearch(false)} />
+    </>
   );
 }
