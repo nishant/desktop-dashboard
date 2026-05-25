@@ -16,7 +16,18 @@ export function useSetVolume() {
   return useMutation({
     mutationFn: (volumePercent: number) =>
       apiClient.post('/api/sound/volume', { volumePercent }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+    onMutate: async (volumePercent) => {
+      await qc.cancelQueries({ queryKey: ['sound'] });
+      const previous = qc.getQueryData<SoundData>(['sound']);
+      qc.setQueryData<SoundData>(['sound'], (old) =>
+        old ? { ...old, volumePercent } : old,
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(['sound'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['sound'] }),
   });
 }
 
@@ -41,6 +52,19 @@ export function useSetSessionVolume() {
   return useMutation({
     mutationFn: ({ pid, volumePercent }: { pid: number; volumePercent: number }) =>
       apiClient.post('/api/sound/sessions/volume', { pid, volumePercent }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+    onMutate: async ({ pid, volumePercent }) => {
+      await qc.cancelQueries({ queryKey: ['sound'] });
+      const previous = qc.getQueryData<SoundData>(['sound']);
+      qc.setQueryData<SoundData>(['sound'], (old) =>
+        old
+          ? { ...old, sessions: old.sessions.map((s) => (s.pid === pid ? { ...s, volumePercent } : s)) }
+          : old,
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(['sound'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['sound'] }),
   });
 }
