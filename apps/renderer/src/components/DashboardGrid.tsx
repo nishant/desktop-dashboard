@@ -1,4 +1,6 @@
+import { useState, useEffect, useMemo } from 'react';
 import ReactGridLayout, { WidthProvider } from 'react-grid-layout';
+import type { Layout } from 'react-grid-layout';
 import { useLayoutStore } from '../store/layoutStore';
 import { WidgetShell } from './WidgetShell';
 import { WeatherWidget } from '../widgets/weather/WeatherWidget';
@@ -9,6 +11,9 @@ import { SoundWidget } from '../widgets/sound/SoundWidget';
 import type { WidgetId } from '../lib/layouts';
 
 const GridLayout = WidthProvider(ReactGridLayout);
+
+const MARGIN = 8;
+const PADDING = 8;
 
 const WIDGET_TITLES: Record<WidgetId, string> = {
   weather: 'Weather',
@@ -26,16 +31,35 @@ const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
   sound: <SoundWidget />,
 };
 
+function useRowHeight(layout: Layout[]): number {
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const onResize = () => setWindowHeight(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const numRows = useMemo(
+    () => Math.max(...layout.map((item) => item.y + item.h), 1),
+    [layout],
+  );
+
+  // Solve: windowHeight = numRows * rowHeight + (numRows - 1) * MARGIN + 2 * PADDING
+  return Math.max(10, (windowHeight - (numRows - 1) * MARGIN - 2 * PADDING) / numRows);
+}
+
 export function DashboardGrid() {
   const { layout, setLayout } = useLayoutStore();
+  const rowHeight = useRowHeight(layout);
 
   return (
     <GridLayout
       layout={layout}
       cols={24}
-      rowHeight={40}
-      margin={[8, 8]}
-      containerPadding={[8, 8]}
+      rowHeight={rowHeight}
+      margin={[MARGIN, MARGIN]}
+      containerPadding={[PADDING, PADDING]}
       draggableHandle=".widget-drag-handle"
       onLayoutChange={setLayout}
       isResizable
