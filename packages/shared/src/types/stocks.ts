@@ -9,6 +9,7 @@ export interface StockQuote {
   dayHigh: number;
   dayLow: number;
   marketOpen: boolean;
+  sparkline: number[];
 }
 
 export interface StocksData {
