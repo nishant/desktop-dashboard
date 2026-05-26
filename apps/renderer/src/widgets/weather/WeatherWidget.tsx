@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Droplets, Wind, Zap, Umbrella } from 'lucide-react';
 import { useWeather } from './useWeather';
 import { getWeatherMeta } from './weatherCodes';
@@ -18,6 +19,54 @@ function formatDay(dateStr: string): string {
 
 export function WeatherWidget() {
   const { data, isLoading, isError } = useWeather();
+  const hourlyRef = useRef<HTMLDivElement>(null);
+
+  // Wheel: map vertical scroll to horizontal. Drag: click-and-drag to pan.
+  useEffect(() => {
+    const el = hourlyRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaX !== 0) return; // let native horizontal scroll through
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    let isDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.pageX;
+      startScrollLeft = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none';
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      el.scrollLeft = startScrollLeft - (e.pageX - startX);
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+      el.style.cursor = '';
+      el.style.userSelect = '';
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -76,7 +125,7 @@ export function WeatherWidget() {
       {/* Hourly strip */}
       <div className="shrink-0">
         <p className="text-zinc-600 text-xs uppercase tracking-widest mb-2">Hourly</p>
-        <div className="flex gap-2 overflow-x-auto scrollbar-none">
+        <div ref={hourlyRef} className="flex gap-2 overflow-x-auto scrollbar-none cursor-grab select-none">
           {hourly.map((h) => {
             const hMeta = getWeatherMeta(h.weatherCode);
             return (

@@ -53,7 +53,7 @@ Personal ambient desktop dashboard for Nish, running all day on a secondary moni
 ## Git Workflow
 1. **Branch first** — `git checkout -b <branch>` before touching any files. Never make changes on `master` then branch for the PR.
 2. **Update CHANGELOG.md** on the branch before opening the PR. New entries go at the top (newest first). Cover every meaningful change and architectural decision.
-3. **Commit, push, `gh pr create`, merge** — in that order.
+3. **Commit, push, `gh pr create`** — in that order. **Do NOT auto-merge** — wait for Nish to explicitly say "merge".
 4. Branch naming: `feat/<slug>` for features, `fix/<slug>` for fixes.
 
 ## Memory Protocol

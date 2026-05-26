@@ -4,6 +4,20 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #15] fix: weather hourly strip — hide scrollbar, add wheel + drag-to-scroll
+**Branch:** `fix/weather-scrollbar-windows` → `master`
+**Date:** 2026-05-25
+
+### Fixed
+- **Scrollbar hidden cross-platform** (`index.css`) — added explicit `.scrollbar-none` CSS rules (`::-webkit-scrollbar { display: none }`, `scrollbar-width: none`, `-ms-overflow-style: none`). Previously only the Tailwind class name existed with no backing CSS rule, so macOS overlay scrollbars hid themselves naturally but Windows always showed the native bar.
+- **Wheel-to-horizontal-scroll** (`WeatherWidget.tsx`) — `wheel` events on the hourly strip now map vertical delta to `scrollLeft`. Native horizontal scroll (trackpad two-finger swipe) still passes through unchanged.
+- **Click-and-drag to pan** (`WeatherWidget.tsx`) — `mousedown`/`mousemove`/`mouseup` handlers on the hourly strip enable click-and-drag scrolling. Cursor changes to `grabbing` while dragging. Listeners on `window` so drag works even if the mouse leaves the strip.
+
+### Changed
+- **`CLAUDE.md`** — updated Git Workflow rule 3 to explicitly say "Do NOT auto-merge — wait for Nish to explicitly say 'merge'".
+
+---
+
 ## [PR #14] chore: document git workflow + memory protocol in CLAUDE.md
 **Branch:** `chore/claude-md-workflow-rules` → `master`
 **Date:** 2026-05-25
