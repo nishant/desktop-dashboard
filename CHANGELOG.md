@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #14] chore: document git workflow + memory protocol in CLAUDE.md
+**Branch:** `chore/claude-md-workflow-rules` → `master`
+**Date:** 2026-05-25
+
+### Changed
+- **`CLAUDE.md`** — added two new sections:
+  - **Git Workflow**: branch-first rule, CHANGELOG-before-PR rule, branch naming convention (`feat/` / `fix/`)
+  - **Memory Protocol**: new preferences go into both `CLAUDE.md` (committed, travels with repo) and `~/.claude/projects/…/memory/` (local machine memory)
+
+---
+
 ## [PR #13] fix: Spotify — conditional text scroll + macOS sizing init
 **Branch:** `fix/spotify-scroll-overflow` → `master`
 **Date:** 2026-05-25
