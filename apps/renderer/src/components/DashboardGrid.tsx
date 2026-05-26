@@ -8,6 +8,7 @@ import { SpotifyWidget } from '../widgets/spotify/SpotifyWidget';
 import { StocksWidget } from '../widgets/stocks/StocksWidget';
 import { HardwareWidget } from '../widgets/hardware/HardwareWidget';
 import { SoundWidget } from '../widgets/sound/SoundWidget';
+import { TITLEBAR_H } from './Titlebar';
 import type { WidgetId } from '../lib/layouts';
 
 const GridLayout = WidthProvider(ReactGridLayout);
@@ -45,8 +46,9 @@ function useRowHeight(layout: Layout[]): number {
     [layout],
   );
 
-  // Solve: windowHeight = numRows * rowHeight + (numRows - 1) * MARGIN + 2 * PADDING
-  return Math.max(10, (windowHeight - (numRows - 1) * MARGIN - 2 * PADDING) / numRows);
+  // Solve: availHeight = numRows * rowHeight + (numRows - 1) * MARGIN + 2 * PADDING
+  const availHeight = windowHeight - TITLEBAR_H;
+  return Math.max(10, (availHeight - (numRows - 1) * MARGIN - 2 * PADDING) / numRows);
 }
 
 export function DashboardGrid() {
