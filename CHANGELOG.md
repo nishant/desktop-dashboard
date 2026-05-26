@@ -4,6 +4,24 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #17] feat: titlebar with window drag + expanded layout presets
+**Branch:** `feat/titlebar-and-layouts` → `master`
+**Date:** 2026-05-25
+
+### Added
+- **`Titlebar.tsx`** — 32px bar pinned above the grid. Left side shows "nishboard" label. Entire bar carries `-webkit-app-region: drag` (Electron frameless window drag). Right side hosts the layout preset buttons with `-webkit-app-region: no-drag` so clicks register. Replaces the old floating `LayoutToolbar`.
+- **Layout presets** — renamed "Stocks Focus" → "Markets"; 3 new presets added to `layouts.ts`:
+  - **Focus** — Spotify takes up a tall left column (18 rows), Stocks fills top-right (14 rows), Weather + Sound split the bottom-right, Hardware is a thin strip below Spotify.
+  - **Chill** — Weather, Hardware, Sound stacked in a narrow left column; Stocks and Spotify each take a full-height column (all 22 rows) to the right.
+  - **Wide** — Two big horizontal rows: Stocks + Spotify split the top 12 rows; Hardware + Weather + Sound split the bottom 10 rows.
+
+### Changed
+- **`App.tsx`** — switched to `flex-col` layout; Titlebar sits above a `flex-1` grid container.
+- **`DashboardGrid.tsx`** — `useRowHeight` now subtracts `TITLEBAR_H` (32px) from `window.innerHeight` so the grid fills the space below the titlebar exactly.
+- **`LayoutToolbar.tsx`** — deleted (replaced by Titlebar).
+
+---
+
 ## [PR #16] fix: Spotify widget resize broken on macOS fresh start
 **Branch:** `fix/spotify-resize-mac` → `master`
 **Date:** 2026-05-25
