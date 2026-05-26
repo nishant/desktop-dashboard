@@ -4,6 +4,24 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #21] feat: youtube in all layouts + autoFillLayout
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Changed
+- **`layouts.ts`** — All 7 non-YouTube presets redesigned to include `youtube` widget. Every preset now covers 7 widgets across 24×22 gap-free cells.
+  - Default: 4 small top row (h=8), youtube+sound mid band (h=9), hardware full-width bottom (h=5)
+  - Markets: stocks+youtube equal top halves (h=12), info grid below
+  - Media: spotify tall left, youtube wide top-right, small widgets bottom-right
+  - System: hardware+youtube top halves, 5 widgets below
+  - Focus: spotify full-height left, youtube center-top, stocks right, info bottom-right
+  - Chill: info stack + stocks left, youtube and spotify as full-height columns right
+  - Wide: stocks+youtube equal top row, 5 widgets below
+- **`layouts.ts`** — Added `ALL_WIDGET_IDS` constant and `autoFillLayout(layout)` utility. Any widget IDs missing from a stored or custom layout are appended to the bottom row automatically. Future widgets only need to be added to `ALL_WIDGET_IDS` — no manual preset redesign needed.
+- **`layoutStore.ts`** — `applyPreset`, initial state, `resetToDefault`, and `onRehydrateStorage` all run `autoFillLayout` so persisted layouts from older versions auto-gain new widgets on next load.
+
+---
+
 ## [PR #20] feat: YouTube widget
 **Branch:** `feat/youtube-widget` → `master`
 **Date:** 2026-05-26
