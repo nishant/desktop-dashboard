@@ -558,7 +558,7 @@ function NowPlayingView({
   // ── Expanded layout — art fills vertical space, controls pinned bottom ────────
   if (ex) {
     return (
-      <div className="h-full flex flex-col px-4 pt-3 pb-4 gap-2">
+      <div className="flex-1 flex flex-col px-4 pt-3 pb-4 gap-2">
         {/* Track title + icons */}
         <div className="flex items-start gap-2 shrink-0">
           <div className="min-w-0 flex-1">
@@ -759,7 +759,7 @@ export function SpotifyWidget() {
         ref={containerRef}
         className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden"
       >
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col">
           {showPlaylists ? (
             <PlaylistPanel onBack={() => setShowPlaylists(false)} />
           ) : hasTrack ? (
