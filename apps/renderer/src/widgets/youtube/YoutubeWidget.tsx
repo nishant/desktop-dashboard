@@ -151,8 +151,11 @@ export function YoutubeWidget() {
 
   const { data, isFetching, isError } = useYoutubeSearch(submittedQuery);
 
+  // Clears video and returns to home screen
   const goHome = () => { setSelectedVideo(null); setView('home'); };
-  const goSearch = () => { setSelectedVideo(null); setView('search'); };
+
+  // Plays a video and switches to player view
+  const handlePlay = (video: YoutubeVideo) => { setSelectedVideo(video); setView('home'); };
 
   const handleSubmit = () => {
     const q = inputValue.trim();
@@ -161,12 +164,18 @@ export function YoutubeWidget() {
     if (resultsRef.current) resultsRef.current.scrollTop = 0;
   };
 
-  // ── Playing ───────────────────────────────────────────────────────────────────
+  // ── Playing (or playing + search overlay) ────────────────────────────────────
   if (selectedVideo) {
+    const showSearch = view === 'search';
     const iframeH = Math.max(60, height - CONTROL_BAR_H);
+
     return (
       <div ref={setContainerEl} className="h-full flex flex-col overflow-hidden">
-        <div className="shrink-0" style={{ height: iframeH }}>
+        {/*
+          Iframe kept mounted at height=0 while search is open so playback
+          position is preserved when the user returns to the player.
+        */}
+        <div className="shrink-0 overflow-hidden" style={{ height: showSearch ? 0 : iframeH }}>
           <iframe
             key={selectedVideo.videoId}
             src={`https://www.youtube-nocookie.com/embed/${selectedVideo.videoId}?autoplay=1&rel=0&modestbranding=1`}
@@ -175,21 +184,66 @@ export function YoutubeWidget() {
             allowFullScreen
           />
         </div>
-        <div
-          className="flex items-center gap-2 px-3 border-t border-zinc-800 shrink-0"
-          style={{ height: CONTROL_BAR_H }}
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-zinc-300 text-[11px] font-medium truncate">{selectedVideo.title}</p>
-            <p className="text-zinc-600 text-[10px] truncate">{selectedVideo.channelTitle}</p>
+
+        {showSearch ? (
+          /* Search overlay while video stays loaded in background */
+          <>
+            <SearchBar
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSubmit}
+              loading={isFetching}
+              onBack={() => setView('home')}
+            />
+            <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
+              {!submittedQuery && (
+                <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
+                  <Search size={18} className="text-zinc-700" />
+                  <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
+                </div>
+              )}
+              {submittedQuery && isFetching && !data && (
+                <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
+              )}
+              {isError && (
+                <p className="text-red-400/70 text-xs text-center py-6">
+                  Search failed — check YOUTUBE_API_KEY in .env
+                </p>
+              )}
+              {data?.items.map((video) => (
+                <ResultRow key={video.videoId} video={video} onPlay={() => handlePlay(video)} />
+              ))}
+              {data?.items.length === 0 && (
+                <p className="text-zinc-600 text-xs text-center py-6">No results</p>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Control bar */
+          <div
+            className="flex items-center gap-2 px-3 border-t border-zinc-800 shrink-0"
+            style={{ height: CONTROL_BAR_H }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-zinc-300 text-[11px] font-medium truncate">{selectedVideo.title}</p>
+              <p className="text-zinc-600 text-[10px] truncate">{selectedVideo.channelTitle}</p>
+            </div>
+            <button
+              onClick={() => setView('search')}
+              title="Search"
+              className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+            >
+              <Search size={13} />
+            </button>
+            <button
+              onClick={goHome}
+              title="Close video"
+              className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+            >
+              <X size={13} />
+            </button>
           </div>
-          <button onClick={goSearch} title="Search" className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0">
-            <Search size={13} />
-          </button>
-          <button onClick={goHome} title="Close video" className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0">
-            <X size={13} />
-          </button>
-        </div>
+        )}
       </div>
     );
   }
@@ -203,7 +257,7 @@ export function YoutubeWidget() {
     );
   }
 
-  // ── Search ────────────────────────────────────────────────────────────────────
+  // ── Search (no video) ─────────────────────────────────────────────────────────
   return (
     <div ref={setContainerEl} className="h-full flex flex-col overflow-hidden">
       <SearchBar
@@ -229,7 +283,7 @@ export function YoutubeWidget() {
           </p>
         )}
         {data?.items.map((video) => (
-          <ResultRow key={video.videoId} video={video} onPlay={() => setSelectedVideo(video)} />
+          <ResultRow key={video.videoId} video={video} onPlay={() => handlePlay(video)} />
         ))}
         {data?.items.length === 0 && (
           <p className="text-zinc-600 text-xs text-center py-6">No results</p>
