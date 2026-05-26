@@ -8,8 +8,8 @@ import type { YoutubeVideo } from '@dash/shared';
 function Player({ video, onClose }: { video: YoutubeVideo; onClose: () => void }) {
   return (
     <div className="flex flex-col min-h-0 h-full">
-      {/* 16:9 iframe */}
-      <div className="w-full shrink-0" style={{ aspectRatio: '16/9' }}>
+      {/* Iframe expands to fill container — YouTube letterboxes internally */}
+      <div className="flex-1 min-h-0">
         <iframe
           key={video.videoId}
           src={`https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1&rel=0&modestbranding=1`}
@@ -98,6 +98,9 @@ function ResultRow({ video, onPlay }: { video: YoutubeVideo; onPlay: () => void 
 
 // ── Widget root ───────────────────────────────────────────────────────────────
 
+const SEARCHBAR_H = 44;  // px — SearchBar measured height
+const MIN_RESULTS_H = 96; // px — minimum useful results scroll area
+
 export function YoutubeWidget() {
   const [inputValue, setInputValue] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
@@ -106,7 +109,6 @@ export function YoutubeWidget() {
   const [height, setHeight] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Measure container height to decide layout
   useEffect(() => {
     if (!containerEl) return;
     let rafId: number;
@@ -128,15 +130,14 @@ export function YoutubeWidget() {
     if (!q) return;
     setSelectedVideo(null);
     setSubmittedQuery(q);
-    // scroll results back to top
     if (resultsRef.current) resultsRef.current.scrollTop = 0;
   };
 
-  // If a video is selected AND there's enough height to show player + search,
-  // show both. Below ~300px show player-only (fills tile); above that show split.
   const showPlayer = selectedVideo !== null;
+  // playerOnly: widget is short — player fills the whole tile, no search UI
+  const playerOnly = showPlayer && height > 0 && height <= 280;
+  // showSearchBelowPlayer: tall enough — player + search stack vertically
   const showSearchBelowPlayer = showPlayer && height > 280;
-  const playerOnly = showPlayer && height <= 280;
 
   if (playerOnly && selectedVideo) {
     return (
@@ -146,56 +147,55 @@ export function YoutubeWidget() {
     );
   }
 
+  // Player gets a fixed height that guarantees SearchBar + results always have room.
+  // Player fills that container; YouTube letterboxes the video internally.
+  const playerH = Math.max(100, height - SEARCHBAR_H - MIN_RESULTS_H);
+
   return (
     <div ref={setContainerEl} className="h-full flex flex-col overflow-hidden">
-      {/* Player (when video selected and tall enough) */}
-      {showPlayer && selectedVideo && (
-        <Player video={selectedVideo} onClose={() => setSelectedVideo(null)} />
-      )}
-
-      {/* Search bar — always visible (unless player-only handled above) */}
-      {(!showPlayer || showSearchBelowPlayer) && (
-        <SearchBar
-          value={inputValue}
-          onChange={setInputValue}
-          onSubmit={handleSubmit}
-          loading={isFetching}
-        />
-      )}
-
-      {/* Results */}
-      {(!showPlayer || showSearchBelowPlayer) && (
-        <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
-          {!submittedQuery && (
-            <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
-              <Search size={20} className="text-zinc-700" />
-              <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
-            </div>
-          )}
-
-          {submittedQuery && isFetching && !data && (
-            <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
-          )}
-
-          {isError && (
-            <p className="text-red-400/70 text-xs text-center py-6">
-              Search failed — check YOUTUBE_API_KEY in .env
-            </p>
-          )}
-
-          {data?.items.map((video) => (
-            <ResultRow
-              key={video.videoId}
-              video={video}
-              onPlay={() => setSelectedVideo(video)}
-            />
-          ))}
-
-          {data?.items.length === 0 && (
-            <p className="text-zinc-600 text-xs text-center py-6">No results</p>
-          )}
+      {showSearchBelowPlayer && selectedVideo && (
+        <div className="shrink-0" style={{ height: playerH }}>
+          <Player video={selectedVideo} onClose={() => setSelectedVideo(null)} />
         </div>
       )}
+
+      <SearchBar
+        value={inputValue}
+        onChange={setInputValue}
+        onSubmit={handleSubmit}
+        loading={isFetching}
+      />
+
+      <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
+        {!submittedQuery && (
+          <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
+            <Search size={20} className="text-zinc-700" />
+            <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
+          </div>
+        )}
+
+        {submittedQuery && isFetching && !data && (
+          <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
+        )}
+
+        {isError && (
+          <p className="text-red-400/70 text-xs text-center py-6">
+            Search failed — check YOUTUBE_API_KEY in .env
+          </p>
+        )}
+
+        {data?.items.map((video) => (
+          <ResultRow
+            key={video.videoId}
+            video={video}
+            onPlay={() => setSelectedVideo(video)}
+          />
+        ))}
+
+        {data?.items.length === 0 && (
+          <p className="text-zinc-600 text-xs text-center py-6">No results</p>
+        )}
+      </div>
     </div>
   );
 }
