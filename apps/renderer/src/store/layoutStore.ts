@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Layout } from 'react-grid-layout';
-import { DEFAULT_LAYOUT, PRESETS } from '../lib/layouts';
+import { DEFAULT_LAYOUT, PRESETS, autoFillLayout } from '../lib/layouts';
 
 interface LayoutState {
   layout: Layout[];
@@ -14,19 +14,24 @@ interface LayoutState {
 export const useLayoutStore = create<LayoutState>()(
   persist(
     (set) => ({
-      layout: DEFAULT_LAYOUT.layout,
+      layout: autoFillLayout(DEFAULT_LAYOUT.layout),
       activePreset: DEFAULT_LAYOUT.name,
 
       setLayout: (layout) => set({ layout, activePreset: null }),
 
       applyPreset: (name) => {
         const preset = PRESETS.find((p) => p.name === name);
-        if (preset) set({ layout: preset.layout, activePreset: name });
+        if (preset) set({ layout: autoFillLayout(preset.layout), activePreset: name });
       },
 
       resetToDefault: () =>
-        set({ layout: DEFAULT_LAYOUT.layout, activePreset: DEFAULT_LAYOUT.name }),
+        set({ layout: autoFillLayout(DEFAULT_LAYOUT.layout), activePreset: DEFAULT_LAYOUT.name }),
     }),
-    { name: 'dashboard-layout' }
+    {
+      name: 'dashboard-layout',
+      onRehydrateStorage: () => (state) => {
+        if (state) state.layout = autoFillLayout(state.layout);
+      },
+    }
   )
 );

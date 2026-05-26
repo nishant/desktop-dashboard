@@ -7,6 +7,7 @@ import { spotifyRoutes } from './routes/spotify';
 import { stocksRoutes } from './routes/stocks';
 import { hardwareRoutes } from './routes/hardware';
 import { soundRoutes } from './routes/sound';
+import { youtubeRoutes } from './routes/youtube';
 
 // CWD is packages/server when run via Turborepo — walk up to monorepo root
 config({ path: resolve(__dirname, '../../../.env') });
@@ -23,6 +24,7 @@ async function start(): Promise<void> {
   server.register(stocksRoutes, { prefix: '/api/stocks' });
   server.register(hardwareRoutes, { prefix: '/api/hardware' });
   server.register(soundRoutes, { prefix: '/api/sound' });
+  server.register(youtubeRoutes, { prefix: '/api/youtube' });
 
   server.get('/health', async () => ({ status: 'ok' }));
 

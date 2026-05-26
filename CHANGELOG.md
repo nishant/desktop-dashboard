@@ -4,6 +4,63 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #22] feat: youtube widget UX polish
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Changed
+- **`YoutubeWidget.tsx`** — full state machine redesign (home / search / playing).
+  - **Home screen**: greyscale YouTube icon SVG + "YouTube" wordmark, both scaling dynamically with widget height (14% of height, clamped 20–52px). Below 120px collapses to compact horizontal layout. "Search videos" pill opens search.
+  - **Search view**: back arrow (← returns to player if a video is loaded, otherwise home) + search input with `autoFocus` + results list.
+  - **Playing view**: iframe fills `height − 44px`. Fixed 44px control bar shows title + channel + search icon (opens search without stopping playback) + X (closes video → home). Scrubber always fully visible.
+  - **Resume on back**: clicking search while a video plays keeps the iframe mounted at `height: 0; overflow: hidden` — YouTube preserves the playback position. Clicking back restores the iframe to full height, resuming exactly where playback was. Selecting a new result while something is playing replaces the video correctly.
+
+---
+
+## [PR #21] feat: youtube in all layouts + autoFillLayout
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Changed
+- **`layouts.ts`** — All 7 non-YouTube presets redesigned to include `youtube` widget. Every preset now covers 7 widgets across 24×22 gap-free cells.
+  - Default: 4 small top row (h=8), youtube+sound mid band (h=9), hardware full-width bottom (h=5)
+  - Markets: stocks+youtube equal top halves (h=12), info grid below
+  - Media: spotify tall left, youtube wide top-right, small widgets bottom-right
+  - System: hardware+youtube top halves, 5 widgets below
+  - Focus: spotify full-height left, youtube center-top, stocks right, info bottom-right
+  - Chill: info stack + stocks left, youtube and spotify as full-height columns right
+  - Wide: stocks+youtube equal top row, 5 widgets below
+- **`layouts.ts`** — Added `ALL_WIDGET_IDS` constant and `autoFillLayout(layout)` utility. Any widget IDs missing from a stored or custom layout are appended to the bottom row automatically. Future widgets only need to be added to `ALL_WIDGET_IDS` — no manual preset redesign needed.
+- **`layoutStore.ts`** — `applyPreset`, initial state, `resetToDefault`, and `onRehydrateStorage` all run `autoFillLayout` so persisted layouts from older versions auto-gain new widgets on next load.
+
+---
+
+## [PR #20] feat: YouTube widget
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Added
+- **`YoutubeWidget.tsx`** — search + embedded player widget.
+  - Search bar triggers on Enter or arrow button; results are cached 5 min (TanStack Query). No auto-search on keystroke — preserves API quota.
+  - Clicking a result plays it in a `youtube-nocookie.com/embed/` iframe with `autoplay=1`. Works natively in Electron's Chromium renderer without any extra configuration.
+  - Adaptive layout: if the tile height ≤ 280px, shows player full-tile with a close button. Above that, player + search bar + results list stack vertically.
+  - Error state shown when `YOUTUBE_API_KEY` is missing or the API returns an error.
+- **`packages/server/src/routes/youtube.ts`** — `GET /api/youtube/search?q=&pageToken=`. Calls YouTube Data API v3, decodes HTML entities in titles, returns `YoutubeSearchPage`. Returns 503 if `YOUTUBE_API_KEY` is not set.
+- **`packages/shared/src/types/youtube.ts`** — `YoutubeVideo`, `YoutubeSearchPage` types.
+- **`useYoutube.ts`** — `useYoutubeSearch(query)` hook; query is only enabled when non-empty.
+- **YouTube preset** in `layouts.ts` — all 7 widgets (including youtube). Existing 7 presets remain unchanged (they cover the full grid with 6 widgets; youtube only appears in this preset).
+- **`.env`** — `YOUTUBE_API_KEY=` placeholder added.
+
+### Changed
+- `WidgetId` extended to include `'youtube'`.
+- `DashboardGrid` — youtube added to `WIDGET_TITLES` and `WIDGET_COMPONENTS`.
+- `packages/server/src/index.ts` — youtube route registered at `/api/youtube`.
+
+### API key required
+YouTube Data API v3 key from Google Cloud Console. Free tier: 10,000 units/day; search costs 100 units (~100 searches/day free). See PR description for setup steps.
+
+---
+
 ## [PR #19] fix: weather + hardware scroll broken on Windows (callback ref)
 **Branch:** `fix/scroll-callback-ref` → `master`
 **Date:** 2026-05-26
