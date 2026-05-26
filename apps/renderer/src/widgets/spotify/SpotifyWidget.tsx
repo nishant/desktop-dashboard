@@ -57,40 +57,64 @@ function useIntersectionCallback(cb: () => void, deps: unknown[]) {
 }
 
 // ── Scrolling text marquee ────────────────────────────────────────────────────
-// Renders text that scrolls horizontally when it overflows its container.
+// Only animates when text actually overflows the container.
+// Re-measures on text change AND on container resize (SizeVariant transitions).
 // Pattern: 2s pause → scroll at 40px/s → 2s pause → instant reset → repeat.
 
 function ScrollingText({ text, className }: { text: string; className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  const animRef = useRef<Animation | null>(null);
 
-  useLayoutEffect(() => {
+  // Stable reflow function — cancels any running animation and re-evaluates overflow
+  const reflow = useCallback(() => {
     const container = containerRef.current;
     const textEl = textRef.current;
     if (!container || !textEl) return;
 
+    // Cancel previous animation (fill: 'none' default → transform auto-resets)
+    if (animRef.current) {
+      animRef.current.cancel();
+      animRef.current = null;
+    }
+
     const overflow = textEl.scrollWidth - container.clientWidth;
-    if (overflow <= 0) return; // fits — no animation needed
+    if (overflow <= 1) return; // fits (1px tolerance for sub-pixel rounding)
 
     const PAUSE_MS = 2000;
     const scrollMs = (overflow / 40) * 1000; // 40px/s
     const totalMs = PAUSE_MS + scrollMs + PAUSE_MS;
-
     const p1 = PAUSE_MS / totalMs;
     const p2 = (PAUSE_MS + scrollMs) / totalMs;
 
-    const anim = textEl.animate(
+    animRef.current = textEl.animate(
       [
-        { transform: 'translateX(0)',           offset: 0  },
-        { transform: 'translateX(0)',           offset: p1 },
+        { transform: 'translateX(0)',              offset: 0  },
+        { transform: 'translateX(0)',              offset: p1 },
         { transform: `translateX(-${overflow}px)`, offset: p2 },
         { transform: `translateX(-${overflow}px)`, offset: 1  },
       ],
       { duration: totalMs, iterations: Infinity, easing: 'linear' },
     );
+  }, []); // stable — reads refs at call time, no captured values
 
-    return () => anim.cancel();
-  }, [text]);
+  // Re-measure when text changes
+  useLayoutEffect(() => {
+    reflow();
+    return () => {
+      animRef.current?.cancel();
+      animRef.current = null;
+    };
+  }, [text, reflow]);
+
+  // Re-measure when container width changes (covers SizeVariant transitions)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(reflow);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [reflow]);
 
   return (
     <div ref={containerRef} className="overflow-hidden w-full">
@@ -816,13 +840,26 @@ export function SpotifyWidget() {
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    // Seed the initial size immediately from the current DOM dimensions
-    setSize(classify(el.getBoundingClientRect().height));
+
+    const measure = () => setSize(classify(el.getBoundingClientRect().height));
+
+    // Seed immediately (synchronous, before paint)
+    measure();
+
+    // RAF re-seed: Chromium on macOS can return 0 from getBoundingClientRect
+    // inside useLayoutEffect when the flex row height hasn't been composited yet.
+    // One frame later the layout is always settled.
+    const rafId = requestAnimationFrame(measure);
+
     const ro = new ResizeObserver(([entry]) => {
       setSize(classify(entry.contentRect.height));
     });
     ro.observe(el);
-    return () => ro.disconnect();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+    };
   }, []);
 
   const handleConnect = useCallback(async () => {
