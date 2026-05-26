@@ -4,6 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #13] fix: Spotify — conditional text scroll + macOS sizing init
+**Branch:** `fix/spotify-scroll-overflow` → `master`
+**Date:** 2026-05-25
+
+### Fixed
+- **Conditional scroll** (`ScrollingText`) — text now only animates when it actually overflows its container. Added a `ResizeObserver` inside `ScrollingText` so it re-measures on every container width change (catches `SizeVariant` transitions in both directions). 1px sub-pixel rounding tolerance added to prevent spurious animation on near-exact fits.
+- **macOS `SizeVariant` init** — `getBoundingClientRect().height` can return `0` inside `useLayoutEffect` on macOS/Chromium before the flex grid row height has been composited. Added a `requestAnimationFrame` re-seed so the correct height is read after the browser's first paint, preventing the widget from staying stuck at `xs`.
+
+---
+
 ## [PR #12] feat: Spotify scrolling text marquee + ResizeObserver timing fix
 **Branch:** `fix/spotify-bugfixes` → `master`
 **Date:** 2026-05-25
