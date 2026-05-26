@@ -17,7 +17,12 @@ import type { TrackData, SpotifyPlaylist, SpotifyDevice, SpotifyTrackItem } from
 
 // ── Size variant ──────────────────────────────────────────────────────────────
 
-type SizeVariant = 'compact' | 'expanded';
+// xs  < 200px  compact horizontal, 40px art
+// sm  200-300  compact horizontal, 56px art, justify-between to fill
+// md  300-400  expanded vertical, art max 110px, compact controls
+// lg  400-480  expanded vertical, art max 165px, medium controls
+// xl  ≥ 480    expanded vertical, art max 220px, large controls
+type SizeVariant = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,8 +146,8 @@ function VolumeSlider({
     }
   };
 
-  const iconSize = size === 'expanded' ? 14 : 12;
-  const sliderW = size === 'expanded' ? 'w-24' : 'w-16';
+  const iconSize = (size === 'xl' || size === 'lg') ? 14 : 12;
+  const sliderW = (size === 'xl' || size === 'lg') ? 'w-24' : 'w-16';
 
   return (
     <div className="flex items-center gap-1.5">
@@ -498,50 +503,25 @@ function NowPlayingView({
 
   const isPodcast = data.type === 'episode';
 
-  const ex = size === 'expanded';
+  // ── Per-tier sizing tokens ────────────────────────────────────────────────────
+  const isExpanded = size === 'md' || size === 'lg' || size === 'xl';
 
-  // Shared controls block used in both layouts
-  const controls = (
-    <div className="flex items-center justify-between">
-      <button onClick={() => shuffle.mutate(!data.shuffleState)}
-        className={`transition-colors ${activeClass(data.shuffleState)}`} title="Shuffle">
-        <Shuffle size={ex ? 17 : 14} />
-      </button>
-      <div className="flex items-center gap-3">
-        <button onClick={handleRewind}
-          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Rewind 15s">
-          <RotateCcw size={ex ? 18 : 15} />
-          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
-        </button>
-        <button onClick={() => previous.mutate()}
-          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Previous">
-          <SkipBack size={ex ? 22 : 17} />
-        </button>
-        <button onClick={handlePlayPause}
-          className={`${ex ? 'w-12 h-12' : 'w-9 h-9'} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center transition-all duration-300`}
-          title={data.isPlaying ? 'Pause' : 'Play'}>
-          {data.isPlaying
-            ? <Pause size={ex ? 20 : 16} fill="currentColor" />
-            : <Play size={ex ? 20 : 16} fill="currentColor" className="ml-0.5" />}
-        </button>
-        <button onClick={() => next.mutate()}
-          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Next">
-          <SkipForward size={ex ? 22 : 17} />
-        </button>
-        <button onClick={handleSkipFwd}
-          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Skip forward 15s">
-          <RotateCw size={ex ? 18 : 15} />
-          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
-        </button>
-      </div>
-      <button onClick={() => repeat.mutate(nextRepeatState(data.repeatState))}
-        className={`transition-colors ${activeClass(data.repeatState !== 'off')}`}
-        title={`Repeat: ${data.repeatState}`}>
-        <RepeatIcon state={data.repeatState} />
-      </button>
-    </div>
-  );
+  // Control icon sizes scale up with the tile
+  const playBtnCls  = size === 'xl' ? 'w-12 h-12' : size === 'lg' ? 'w-10 h-10' : 'w-9 h-9';
+  const playIconSz  = size === 'xl' ? 20 : size === 'lg' ? 18 : 16;
+  const skipSz      = size === 'xl' ? 22 : size === 'lg' ? 20 : 17;
+  const seekSz      = size === 'xl' ? 18 : size === 'lg' ? 16 : 15;
+  const srSz        = size === 'xl' ? 17 : size === 'lg' ? 15 : 14;
 
+  // Art cap for expanded tiers — image is h-full inside a flex-1 container,
+  // so this just prevents it from becoming enormous on very tall tiles
+  const artMaxH = size === 'xl' ? 'max-h-[220px]' : size === 'lg' ? 'max-h-[165px]' : 'max-h-[110px]';
+
+  // Compact art size
+  const compactArtCls = size === 'xs' ? 'w-10 h-10' : 'w-14 h-14';
+  const compactMusicSz = size === 'xs' ? 16 : 20;
+
+  // ── Shared action icons ───────────────────────────────────────────────────────
   const actionIcons = (
     <div className="flex items-center gap-1 shrink-0">
       <button onClick={onOpenPlaylists}
@@ -555,57 +535,101 @@ function NowPlayingView({
     </div>
   );
 
-  // ── Expanded layout — art fills vertical space, controls pinned bottom ────────
-  if (ex) {
+  // ── Shared controls row ───────────────────────────────────────────────────────
+  const controls = (
+    <div className="flex items-center justify-between">
+      <button onClick={() => shuffle.mutate(!data.shuffleState)}
+        className={`transition-colors ${activeClass(data.shuffleState)}`} title="Shuffle">
+        <Shuffle size={srSz} />
+      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={handleRewind}
+          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Rewind 15s">
+          <RotateCcw size={seekSz} />
+          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
+        </button>
+        <button onClick={() => previous.mutate()}
+          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Previous">
+          <SkipBack size={skipSz} />
+        </button>
+        <button onClick={handlePlayPause}
+          className={`${playBtnCls} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center`}
+          title={data.isPlaying ? 'Pause' : 'Play'}>
+          {data.isPlaying
+            ? <Pause size={playIconSz} fill="currentColor" />
+            : <Play size={playIconSz} fill="currentColor" className="ml-0.5" />}
+        </button>
+        <button onClick={() => next.mutate()}
+          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Next">
+          <SkipForward size={skipSz} />
+        </button>
+        <button onClick={handleSkipFwd}
+          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Skip forward 15s">
+          <RotateCw size={seekSz} />
+          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
+        </button>
+      </div>
+      <button onClick={() => repeat.mutate(nextRepeatState(data.repeatState))}
+        className={`transition-colors ${activeClass(data.repeatState !== 'off')}`}
+        title={`Repeat: ${data.repeatState}`}>
+        <RepeatIcon state={data.repeatState} />
+      </button>
+    </div>
+  );
+
+  const progressBar = (
+    <ProgressBar
+      progressMs={data.progressMs}
+      durationMs={data.durationMs}
+      isPlaying={data.isPlaying}
+      onSeek={(ms) => { localProgressRef.current = ms; seek.mutate(ms); }}
+      onTick={(ms) => { localProgressRef.current = ms; }}
+    />
+  );
+
+  // ── Expanded layout (md / lg / xl) ───────────────────────────────────────────
+  // Title pinned top, album art in flex-1 grow zone, controls pinned bottom
+  if (isExpanded) {
     return (
       <div className="flex-1 flex flex-col px-4 pt-3 pb-4 gap-2">
-        {/* Track title + icons */}
+        {/* Title + artist + action icons */}
         <div className="flex items-start gap-2 shrink-0">
           <div className="min-w-0 flex-1">
-            <p className="text-base font-medium text-zinc-100 truncate leading-tight">{data.trackName || '—'}</p>
-            <p className="text-sm text-zinc-400 truncate mt-0.5">{data.artistName}</p>
+            <p className={`font-medium text-zinc-100 truncate leading-tight ${size === 'xl' ? 'text-base' : 'text-sm'}`}>
+              {data.trackName || '—'}
+            </p>
+            <p className="text-xs text-zinc-400 truncate mt-0.5">{data.artistName}</p>
           </div>
           {actionIcons}
         </div>
 
-        {/* Album art — grows to fill available space */}
-        <div className="flex-1 flex items-center justify-center min-h-0 py-1">
+        {/* Album art — flex-1 so it grows to fill remaining space */}
+        <div className="flex-1 flex items-center justify-center min-h-0">
           {data.albumArtUrl ? (
             <img
               src={data.albumArtUrl}
               alt={data.trackName}
-              className="h-full max-h-[240px] aspect-square object-cover rounded-lg shadow-lg"
+              className={`h-full ${artMaxH} aspect-square object-cover rounded-lg shadow-lg`}
             />
           ) : (
-            <div className="h-full max-h-[240px] aspect-square rounded-lg bg-zinc-800 flex items-center justify-center">
-              {isPodcast ? <Mic2 size={48} className="text-zinc-600" /> : <Music size={48} className="text-zinc-600" />}
+            <div className={`h-full ${artMaxH} aspect-square rounded-lg bg-zinc-800 flex items-center justify-center`}>
+              {isPodcast
+                ? <Mic2 size={size === 'xl' ? 48 : 32} className="text-zinc-600" />
+                : <Music size={size === 'xl' ? 48 : 32} className="text-zinc-600" />}
             </div>
           )}
         </div>
 
-        {/* Album name / podcast tag */}
+        {/* Album / podcast label */}
         {!isPodcast && data.albumName && (
-          <p className="text-zinc-600 text-xs truncate text-center shrink-0">{data.albumName}</p>
+          <p className="text-zinc-600 text-[10px] truncate text-center shrink-0 -mt-1">{data.albumName}</p>
         )}
         {isPodcast && (
-          <p className="text-[10px] text-purple-400/70 text-center shrink-0">Podcast</p>
+          <p className="text-[10px] text-purple-400/70 text-center shrink-0 -mt-1">Podcast</p>
         )}
 
-        {/* Progress */}
-        <div className="shrink-0">
-          <ProgressBar
-            progressMs={data.progressMs}
-            durationMs={data.durationMs}
-            isPlaying={data.isPlaying}
-            onSeek={(ms) => { localProgressRef.current = ms; seek.mutate(ms); }}
-            onTick={(ms) => { localProgressRef.current = ms; }}
-          />
-        </div>
-
-        {/* Controls */}
+        <div className="shrink-0">{progressBar}</div>
         <div className="shrink-0">{controls}</div>
-
-        {/* Volume */}
         <div className="flex justify-end shrink-0">
           <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
         </div>
@@ -613,18 +637,25 @@ function NowPlayingView({
     );
   }
 
-  // ── Compact layout — horizontal art + info ────────────────────────────────────
+  // ── Compact layout (xs / sm) ─────────────────────────────────────────────────
+  // justify-between pushes info to top and progress+controls to bottom,
+  // filling the container height naturally at any compact size
+  const artEl = data.albumArtUrl ? (
+    <img src={data.albumArtUrl} alt={data.trackName}
+      className={`${compactArtCls} rounded-md object-cover shrink-0`} />
+  ) : (
+    <div className={`${compactArtCls} rounded-md bg-zinc-800 shrink-0 flex items-center justify-center`}>
+      {isPodcast
+        ? <Mic2 size={compactMusicSz} className="text-zinc-600" />
+        : <Music size={compactMusicSz} className="text-zinc-600" />}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-3 px-4 pb-4 pt-2">
+    <div className="flex-1 flex flex-col justify-between px-4 pb-4 pt-2">
+      {/* Top: art + track info */}
       <div className="flex gap-3 items-center min-w-0">
-        {data.albumArtUrl ? (
-          <img src={data.albumArtUrl} alt={data.trackName}
-            className="w-14 h-14 rounded-md object-cover shrink-0" />
-        ) : (
-          <div className="w-14 h-14 rounded-md bg-zinc-800 shrink-0 flex items-center justify-center">
-            {isPodcast ? <Mic2 size={20} className="text-zinc-600" /> : <Music size={20} className="text-zinc-600" />}
-          </div>
-        )}
+        {artEl}
         <div className="min-w-0 flex-1">
           <p className="text-zinc-100 text-sm font-medium truncate leading-tight">{data.trackName || '—'}</p>
           <p className="text-zinc-400 text-xs truncate mt-0.5">{data.artistName}</p>
@@ -635,16 +666,14 @@ function NowPlayingView({
         </div>
         <div className="self-start mt-0.5">{actionIcons}</div>
       </div>
-      <ProgressBar
-        progressMs={data.progressMs}
-        durationMs={data.durationMs}
-        isPlaying={data.isPlaying}
-        onSeek={(ms) => { localProgressRef.current = ms; seek.mutate(ms); }}
-        onTick={(ms) => { localProgressRef.current = ms; }}
-      />
-      {controls}
-      <div className="flex justify-end">
-        <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
+
+      {/* Bottom: progress + controls + volume */}
+      <div className="flex flex-col gap-2">
+        {progressBar}
+        {controls}
+        <div className="flex justify-end">
+          <VolumeSlider size={size} value={data.volumePercent} onChange={(v) => volume.mutate(v)} />
+        </div>
       </div>
     </div>
   );
@@ -718,12 +747,17 @@ export function SpotifyWidget() {
 
   // Responsive sizing — compact < 280px height, expanded ≥ 280px
   const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<SizeVariant>('compact');
+  const [size, setSize] = useState<SizeVariant>('sm');
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      setSize(entry.contentRect.height >= 280 ? 'expanded' : 'compact');
+      const h = entry.contentRect.height;
+      if (h < 200) setSize('xs');
+      else if (h < 300) setSize('sm');
+      else if (h < 400) setSize('md');
+      else if (h < 480) setSize('lg');
+      else setSize('xl');
     });
     ro.observe(el);
     return () => ro.disconnect();

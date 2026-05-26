@@ -4,6 +4,22 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #11] feat: Spotify widget — 5-tier responsive layout
+**Branch:** `fix/spotify-bugfixes` → `master`
+**Date:** 2026-05-25
+
+### Changed
+- **5-tier `SizeVariant`** (`SpotifyWidget.tsx`) — replaced binary `compact / expanded` with `xs | sm | md | lg | xl` driven by a `ResizeObserver` on the widget root:
+  - `xs` < 200px — compact horizontal, 40px art
+  - `sm` 200–299px — compact horizontal, 56px art, `justify-between` fills height
+  - `md` 300–399px — expanded vertical, album art capped at 110px
+  - `lg` 400–479px — expanded vertical, album art capped at 165px
+  - `xl` ≥ 480px — expanded vertical, album art capped at 220px
+- **Per-tier icon scaling** — play button, skip, seek, and shuffle/repeat icons all scale with the tile height so controls feel proportional rather than tiny on large tiles.
+- **`VolumeSlider` updated** — `iconSize` and slider width scale with `lg`/`xl` tiers (was still comparing against old `'expanded'` string).
+
+---
+
 ## [PR #10] fix: Spotify expanded layout flex pass-through
 **Branch:** `fix/spotify-layout-flex` → `master`
 **Date:** 2026-05-25
