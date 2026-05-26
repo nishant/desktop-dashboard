@@ -823,10 +823,22 @@ export function SpotifyWidget() {
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // Responsive sizing — measure container height via ResizeObserver.
-  // useLayoutEffect fires synchronously after DOM paint so flex dimensions
-  // are always resolved before the first observation.
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Responsive sizing via a callback ref + useEffect([containerEl]).
+  //
+  // WHY not useRef + useLayoutEffect([]): the component has conditional early
+  // returns for loading/auth states. Those views don't render the container div,
+  // so containerRef.current is null on first mount. useLayoutEffect([]) fires
+  // once — on null — and never re-runs once the real element appears.
+  //
+  // Callback ref (setContainerEl) is called by React whenever the element
+  // mounts/unmounts, updating the state and re-triggering the effect with the
+  // real element.
+  //
+  // WHY retry RAF loop instead of a single RAF: Chromium on macOS can return 0
+  // from getBoundingClientRect for multiple frames while the flex grid row is
+  // compositing. We keep retrying until we get a real height, then hand off
+  // to the ResizeObserver for all future updates.
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState<SizeVariant>('sm');
 
   const classify = (h: number): SizeVariant => {
@@ -837,30 +849,30 @@ export function SpotifyWidget() {
     return 'xl';
   };
 
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  useEffect(() => {
+    if (!containerEl) return;
 
-    const measure = () => setSize(classify(el.getBoundingClientRect().height));
-
-    // Seed immediately (synchronous, before paint)
-    measure();
-
-    // RAF re-seed: Chromium on macOS can return 0 from getBoundingClientRect
-    // inside useLayoutEffect when the flex row height hasn't been composited yet.
-    // One frame later the layout is always settled.
-    const rafId = requestAnimationFrame(measure);
+    let rafId: number;
+    const tryMeasure = () => {
+      const h = containerEl.getBoundingClientRect().height;
+      if (h > 0) {
+        setSize(classify(h));
+      } else {
+        rafId = requestAnimationFrame(tryMeasure); // retry until layout settles
+      }
+    };
+    rafId = requestAnimationFrame(tryMeasure);
 
     const ro = new ResizeObserver(([entry]) => {
       setSize(classify(entry.contentRect.height));
     });
-    ro.observe(el);
+    ro.observe(containerEl);
 
     return () => {
       cancelAnimationFrame(rafId);
       ro.disconnect();
     };
-  }, []);
+  }, [containerEl]);
 
   const handleConnect = useCallback(async () => {
     const result = await authUrlQuery.refetch();
@@ -889,7 +901,7 @@ export function SpotifyWidget() {
   return (
     <>
       <div
-        ref={containerRef}
+        ref={setContainerEl}
         className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden"
       >
         <div className="flex-1 min-h-0 flex flex-col">
