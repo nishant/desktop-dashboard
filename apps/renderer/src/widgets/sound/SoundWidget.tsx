@@ -15,10 +15,10 @@ function VolumeIcon({ vol, muted }: { vol: number; muted: boolean }) {
 function DeviceTypeIcon({ name }: { name: string }) {
   const lower = name.toLowerCase();
   if (lower.includes('headphone') || lower.includes('headset') || lower.includes('wireless'))
-    return <Headphones size={13} className="shrink-0" />;
+    return <Headphones size={13} className="shrink-0 text-zinc-300" />;
   if (lower.includes('speaker'))
-    return <Speaker size={13} className="shrink-0" />;
-  return <Monitor size={13} className="shrink-0" />;
+    return <Speaker size={13} className="shrink-0 text-zinc-300" />;
+  return <Monitor size={13} className="shrink-0 text-zinc-300" />;
 }
 
 // ── Master volume slider — local optimistic state ─────────────────────────
@@ -87,7 +87,7 @@ function DeviceCard({
       ].join(' ')} />
 
       {isInput
-        ? <Mic size={13} className="shrink-0" />
+        ? <Mic size={13} className="shrink-0 text-zinc-300" />
         : <DeviceTypeIcon name={device.name} />}
 
       <span className={[
