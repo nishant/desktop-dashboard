@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #10] fix: Spotify expanded layout flex pass-through
+**Branch:** `fix/spotify-layout-flex` → `master`
+**Date:** 2026-05-25
+
+### Fixed
+- **Expanded layout not filling height** (`SpotifyWidget.tsx`) — `h-full` on the `NowPlayingView` expanded root could resolve to 0 in Chromium when the parent is a `flex-1 min-h-0` item without an explicit `height` declaration. Fixed by:
+  1. Making the intermediate wrapper `flex-1 min-h-0 flex flex-col` (flex pass-through)
+  2. Changing the expanded layout root from `h-full flex flex-col` → `flex-1 flex flex-col` so it inherits flex sizing instead of relying on percentage-height resolution
+
+---
+
 ## [PR #9] fix: Spotify widget bugfixes — liked songs, volume slider, responsive layout, icon polish
 **Branch:** `fix/spotify-bugfixes` → `master`
 **Date:** 2026-05-25
