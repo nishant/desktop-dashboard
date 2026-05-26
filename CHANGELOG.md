@@ -4,6 +4,18 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #19] fix: weather + hardware scroll broken on Windows (callback ref)
+**Branch:** `fix/scroll-callback-ref` → `master`
+**Date:** 2026-05-26
+
+### Fixed
+- **Root cause** — both `WeatherWidget` and `HardwareWidget` used `useRef` + `useEffect(fn, [])`. The effect fires after the first render, but both components have `isLoading`/`isError` early returns that render before the scrollable element exists. `ref.current` is always null on that first run and the effect never re-runs, so scroll/drag handlers are never attached.
+- **Fix** — replaced `useRef` with a `useState` callback ref (`ref={setEl}`). React calls the setter the moment the element mounts, which triggers `useEffect([el])` with the real element.
+- **`WeatherWidget`** — hourly strip wheel and drag now work. Also normalises `deltaMode === 1` (Windows line-mode scroll) by multiplying `deltaY × 40` so one wheel notch scrolls a reasonable distance.
+- **`HardwareWidget`** — vertical drag-to-scroll now wires up correctly after data loads.
+
+---
+
 ## [PR #17] feat: titlebar with window drag + expanded layout presets
 **Branch:** `feat/titlebar-and-layouts` → `master`
 **Date:** 2026-05-25
