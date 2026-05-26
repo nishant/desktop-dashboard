@@ -72,12 +72,23 @@ async function macSwitchDevice(id: string): Promise<void> {
 // Interfaces must declare every vtable slot in SDK order, including inherited
 // methods, because .NET COM interop lays them out flat.
 
+// WASAPI COM block.
+//
+// CRITICAL: Every COM method call that returns int (HRESULT) MUST be suppressed
+// with "$null = ..." — PowerShell emits any unassigned expression value to the
+// pipeline (stdout).  Helper functions like Get-DefaultDevice that leak a "0"
+// (S_OK) into the pipeline return @(0, $device) instead of just $device, which
+// then breaks callers that try .Activate() on the array.
+//
+// Similarly all out-parameter variables MUST be explicitly typed ([float], [bool])
+// because PowerShell's default [double] for 0.0 causes COM marshalling to read
+// the wrong bytes when the interface declares "out float".
+
 const WASAPI = `
 Add-Type -ErrorAction Stop -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 
-// ── Master volume ─────────────────────────────────────────────────────────
 [Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioEndpointVolume {
     int RegisterControlChangeNotify(IntPtr n);
@@ -91,8 +102,8 @@ public interface IAudioEndpointVolume {
     int SetChannelVolumeLevelScalar(uint n, float l, ref Guid g);
     int GetChannelVolumeLevel(uint n, out float l);
     int GetChannelVolumeLevelScalar(uint n, out float l);
-    int SetMute(bool m, ref Guid g);
-    int GetMute(out bool m);
+    int SetMute([MarshalAs(UnmanagedType.Bool)] bool m, ref Guid g);
+    int GetMute([MarshalAs(UnmanagedType.Bool)] out bool m);
     int GetVolumeStepInfo(out uint s, out uint c);
     int VolumeStepUp(ref Guid g);
     int VolumeStepDown(ref Guid g);
@@ -100,16 +111,14 @@ public interface IAudioEndpointVolume {
     int GetVolumeRange(out float mn, out float mx, out float inc);
 }
 
-// ── Per-session volume ────────────────────────────────────────────────────
 [Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface ISimpleAudioVolume {
     int SetMasterVolume(float fLevel, ref Guid eventContext);
     int GetMasterVolume(out float pfLevel);
-    int SetMute(bool bMute, ref Guid eventContext);
-    int GetMute(out bool pbMute);
+    int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, ref Guid eventContext);
+    int GetMute([MarshalAs(UnmanagedType.Bool)] out bool pbMute);
 }
 
-// ── Session control (IAudioSessionControl2 includes all IAudioSessionControl slots) ──
 [Guid("BFB7FF88-7239-4FC9-8FA2-07C950BE9C6D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionControl2 {
     int GetState(out int state);
@@ -125,17 +134,15 @@ public interface IAudioSessionControl2 {
     int GetSessionInstanceIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string id);
     int GetProcessId(out uint pid);
     int IsSystemSoundsSession();
-    int SetDuckingPreference(bool optOut);
+    int SetDuckingPreference([MarshalAs(UnmanagedType.Bool)] bool optOut);
 }
 
-// ── Session enumeration ───────────────────────────────────────────────────
 [Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionEnumerator {
     int GetCount(out int count);
     int GetSession(int index, out IAudioSessionControl2 session);
 }
 
-// ── Session manager (IAudioSessionManager2 includes IAudioSessionManager slots) ──
 [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionManager2 {
     int GetAudioSessionControl(ref Guid sessionId, uint streamFlags, out IntPtr session);
@@ -147,7 +154,6 @@ public interface IAudioSessionManager2 {
     int UnregisterDuckNotification(IntPtr client);
 }
 
-// ── Device access ─────────────────────────────────────────────────────────
 [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IMMDevice {
     int Activate(ref Guid iid, uint ctx, IntPtr p, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
@@ -169,20 +175,27 @@ public interface IMMDeviceEnumerator {
 public class MMDeviceEnumerator {}
 '@
 
+# $null = ... on every COM call — prevents HRESULT leaking into the pipeline
 function Get-DefaultDevice {
     $e = [MMDeviceEnumerator]::new() -as [IMMDeviceEnumerator]
-    $d = $null; $e.GetDefaultAudioEndpoint(0, 1, [ref]$d); return $d
+    $d = $null
+    $null = $e.GetDefaultAudioEndpoint(0, 1, [ref]$d)
+    return $d
 }
 function Get-AEV {
     $g = [Guid]"5CDF2C82-841E-4546-9722-0CF74078229A"
-    $o = $null; (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
-    return $o -as [IAudioEndpointVolume]
+    $o = $null
+    $null = (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
+    return ($o -as [IAudioEndpointVolume])
 }
 function Get-SessionEnum {
     $g = [Guid]"77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"
-    $o = $null; (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
+    $o = $null
+    $null = (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
     $mgr = $o -as [IAudioSessionManager2]
-    $se = $null; $mgr.GetSessionEnumerator([ref]$se); return $se
+    $se = $null
+    $null = $mgr.GetSessionEnumerator([ref]$se)
+    return $se
 }
 `;
 
@@ -208,21 +221,43 @@ async function winGetDeviceData(): Promise<WinDeviceData> {
     const devices: AudioDevice[] = names.map((name) => ({ id: name, name, isDefault: name === activeDeviceName }));
     return { volumePercent, muted, activeDeviceName, devices };
   } catch {
-    // WASAPI fallback — volume+mute only, no device list
+    // ── WASAPI fallback — volume + mute via COM ────────────────────────────
+    // Use explicit [float]/[bool] types and $null= to suppress HRESULT output.
     const out = await psRun(`
       ${WASAPI}
       $v = Get-AEV
-      $l = 0.0; $v.GetMasterVolumeLevelScalar([ref]$l)
-      $m = $false; $v.GetMute([ref]$m)
+      [float]$l = [float]0
+      [bool]$m  = [bool]$false
+      $null = $v.GetMasterVolumeLevelScalar([ref]$l)
+      $null = $v.GetMute([ref]$m)
       "$([Math]::Round($l * 100))|$m"
     `);
     const [volStr, muteStr] = out.split('|');
-    return {
-      volumePercent: Number(volStr),
-      muted: muteStr.trim() === 'True',
-      activeDeviceName: 'Default Device',
-      devices: [{ id: 'default', name: 'Default Device', isDefault: true }],
-    };
+    const volumePercent = Math.min(100, Math.max(0, Number(volStr.trim()) || 0));
+    const muted = muteStr.trim() === 'True';
+
+    // ── Device list via CIM — no COM vtable needed ────────────────────────
+    // Win32_SoundDevice gives friendly names for all active audio endpoints.
+    let devices: AudioDevice[] = [];
+    let activeDeviceName = 'Default Output';
+    try {
+      const devOut = await psRun(`
+        Get-CimInstance -ClassName Win32_SoundDevice |
+          Where-Object { $_.Status -eq 'OK' } |
+          ForEach-Object { $_.Name }
+      `);
+      const names = devOut.split('\n').map((s) => s.trim()).filter(Boolean);
+      if (names.length > 0) {
+        activeDeviceName = names[0];
+        devices = names.map((name, i) => ({ id: name, name, isDefault: i === 0 }));
+      }
+    } catch { /* leave devices as empty — widget shows nothing wrong */ }
+
+    if (devices.length === 0) {
+      devices = [{ id: 'default', name: activeDeviceName, isDefault: true }];
+    }
+
+    return { volumePercent, muted, activeDeviceName, devices };
   }
 }
 
@@ -231,28 +266,32 @@ async function winGetDeviceData(): Promise<WinDeviceData> {
 async function winGetSessions(): Promise<AudioSession[]> {
   const out = await psRun(`
     ${WASAPI}
-    # Bulk process name lookup — much faster than one Get-Process per session
     $procs = @{}
     Get-Process | ForEach-Object { $procs[[int]$_.Id] = $_.Name }
 
     $se = Get-SessionEnum
-    $count = 0; $se.GetCount([ref]$count)
+    [int]$count = 0
+    $null = $se.GetCount([ref]$count)
     $seen = @{}
     $lines = [System.Collections.Generic.List[string]]::new()
 
     for ($i = 0; $i -lt $count; $i++) {
-      $ctrl = $null; $se.GetSession($i, [ref]$ctrl)
+      $ctrl = $null
+      $null = $se.GetSession($i, [ref]$ctrl)
 
-      $state = 0; $ctrl.GetState([ref]$state)
-      if ($state -ne 1) { continue }                       # skip inactive/expired
+      [int]$state = 0
+      $null = $ctrl.GetState([ref]$state)
+      if ($state -ne 1) { continue }
 
-      $pid = 0; $ctrl.GetProcessId([ref]$pid)
-      if ($seen.ContainsKey($pid)) { continue }            # one row per process
-      $seen[$pid] = $true
+      [uint32]$pid = 0
+      $null = $ctrl.GetProcessId([ref]$pid)
+      if ($seen.ContainsKey([int]$pid)) { continue }
+      $seen[[int]$pid] = $true
 
-      $isSys = ($ctrl.IsSystemSoundsSession() -eq 0)      # S_OK == IS system sounds
+      $isSys = ($ctrl.IsSystemSoundsSession() -eq 0)
 
-      $dn = ""; $ctrl.GetDisplayName([ref]$dn)
+      [string]$dn = ""
+      $null = $ctrl.GetDisplayName([ref]$dn)
       $name = if ($isSys -or $pid -eq 0) {
         "System Sounds"
       } elseif ($dn -and !$dn.StartsWith("@")) {
@@ -262,8 +301,10 @@ async function winGetSessions(): Promise<AudioSession[]> {
       } else { "Unknown ($pid)" }
 
       $sav = $ctrl -as [ISimpleAudioVolume]
-      $l = 0.0; $sav.GetMasterVolume([ref]$l)
-      $m = $false; $sav.GetMute([ref]$m)
+      [float]$l = [float]0
+      [bool]$m  = [bool]$false
+      $null = $sav.GetMasterVolume([ref]$l)
+      $null = $sav.GetMute([ref]$m)
 
       $lines.Add("$pid|$name|$([Math]::Round($l * 100))|$m")
     }
@@ -291,13 +332,16 @@ async function winSetSessionVolume(pid: number, vol: number): Promise<void> {
     ${WASAPI}
     $targetPid = ${pid}
     $se = Get-SessionEnum
-    $count = 0; $se.GetCount([ref]$count)
+    [int]$count = 0
+    $null = $se.GetCount([ref]$count)
     $g = [Guid]::Empty
     for ($i = 0; $i -lt $count; $i++) {
-      $ctrl = $null; $se.GetSession($i, [ref]$ctrl)
-      $p = 0; $ctrl.GetProcessId([ref]$p)
+      $ctrl = $null
+      $null = $se.GetSession($i, [ref]$ctrl)
+      [uint32]$p = 0
+      $null = $ctrl.GetProcessId([ref]$p)
       if ($p -ne $targetPid) { continue }
-      ($ctrl -as [ISimpleAudioVolume]).SetMasterVolume(${scalar}, [ref]$g)
+      $null = ($ctrl -as [ISimpleAudioVolume]).SetMasterVolume([float]${scalar}, [ref]$g)
     }
   `);
 }
@@ -318,8 +362,9 @@ async function winSetVolume(vol: number): Promise<void> {
     const scalar = (vol / 100).toFixed(6);
     await psRun(`
       ${WASAPI}
-      $v = Get-AEV; $g = [Guid]::Empty
-      $v.SetMasterVolumeLevelScalar(${scalar}, [ref]$g)
+      $v = Get-AEV
+      $g = [Guid]::Empty
+      $null = $v.SetMasterVolumeLevelScalar([float]${scalar}, [ref]$g)
     `);
   }
 }
@@ -330,8 +375,9 @@ async function winSetMute(muted: boolean): Promise<void> {
   } catch {
     await psRun(`
       ${WASAPI}
-      $v = Get-AEV; $g = [Guid]::Empty
-      $v.SetMute(${muted ? '$true' : '$false'}, [ref]$g)
+      $v = Get-AEV
+      $g = [Guid]::Empty
+      $null = $v.SetMute([bool]${muted ? '$true' : '$false'}, [ref]$g)
     `);
   }
 }

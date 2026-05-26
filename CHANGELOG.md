@@ -4,6 +4,28 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #21] fix: Sound widget broken on Windows — WASAPI + UI overhaul
+**Branch:** `fix/sound-windows` → `master`
+**Date:** 2026-05-26
+
+### Fixed
+- **HRESULT pipeline pollution** — PowerShell COM method calls return HRESULT `int` (0 = S_OK) to the pipeline. Every `$v.GetMasterVolumeLevelScalar(...)` etc. emitted `0` to stdout, corrupting the `"vol|mute"` string that the server parsed. `Number("0\n0\n45")` → `NaN` → rounds to 0. Fixed with `$null = <com-call>` on every WASAPI method invocation throughout all scripts.
+- **`Get-DefaultDevice` returning array** — `GetDefaultAudioEndpoint` was emitting its HRESULT into the pipeline, causing the function to return `@(0, $device)`. Callers then called `.Activate()` on the array (PowerShell member enumeration), producing malformed COM calls. Fixed with `$null = $e.GetDefaultAudioEndpoint(...)`.
+- **Float type mismatch** — `$l = 0.0` is `[double]` in PowerShell, not `[float]`. `out float` COM params write 4 bytes into an 8-byte slot, producing garbage volume values. Fixed with explicit `[float]$l = [float]0` and `[bool]$m = [bool]$false` throughout all scripts.
+- **Bool marshalling** — Added `[MarshalAs(UnmanagedType.Bool)]` to `bool` out-parameters in `IAudioEndpointVolume` and `IAudioSessionControl2` interface definitions.
+- **Device names showing "Default Device"** — Added `Get-CimInstance Win32_SoundDevice` fallback (no COM vtable needed) to fetch real device names when `AudioDeviceCmdlets` is not installed.
+- All WASAPI write scripts (`winSetVolume`, `winSetMute`, `winSetSessionVolume`) received the same `$null =` and typed-cast fixes.
+
+### Changed
+- **`SoundWidget.tsx`** — complete UI overhaul to match Windows Settings style:
+  - `DeviceTypeIcon` component: infers Headphones / Speaker / Monitor icon from device name
+  - `DeviceCard`: active indicator dot (emerald), type icon, device name, "Active" badge for the default device
+  - Hint text "Install AudioDeviceCmdlets to switch devices" shown when only one device is listed
+  - Sessions section renamed to **App mixer**
+  - Root div uses `scrollbar-none`
+
+---
+
 ## [PR #19] fix: weather + hardware scroll broken on Windows (callback ref)
 **Branch:** `fix/scroll-callback-ref` → `master`
 **Date:** 2026-05-26
