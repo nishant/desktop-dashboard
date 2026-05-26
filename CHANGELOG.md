@@ -4,6 +4,43 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #9] fix: Spotify widget bugfixes — liked songs, volume slider, responsive layout, icon polish
+**Branch:** `fix/spotify-bugfixes` → `master`
+**Date:** 2026-05-25
+
+### Fixed
+- **Liked Songs 400 error** (`packages/server/src/routes/spotify.ts`) — Spotify's `/v1/me/tracks` endpoint caps at 50; server was sending 100. Now clamps liked-songs branch to `Math.min(50, ...)` while regular playlists keep 100.
+- **Volume slider jumping back** (`apps/renderer/src/widgets/spotify/useSpotify.ts`) — `useSpotifyVolume.onSettled` was immediately invalidating `['spotify-now-playing']`, triggering a refetch that returned Spotify's stale volume and overwrote the optimistic update. Removed `onSettled`; 3s polling handles eventual sync.
+- **Playlist icon color** (`SpotifyWidget.tsx`) — `ListMusic` button was `text-zinc-600` (darker than peers); corrected to `text-zinc-500`.
+- **Responsive layout not filling space** (`SpotifyWidget.tsx`) — Expanded mode (≥ 280px height, detected via `ResizeObserver`) now uses a true `h-full flex flex-col` layout: track title + artist pinned top, album art in a `flex-1` grow zone (`max-h-[240px]`, `aspect-square`), progress + controls + volume pinned bottom. Previously only bumped fixed pixel sizes with no vertical fill.
+
+### Changed
+- **Header removed** — Green dot and "SPOTIFY" label stripped; reclaims ~32px. Search (🔍) and playlist (🎵) icons moved inline next to track info. Both buttons also present in the "nothing playing" view.
+
+### Notes
+- Bug #4 (search 404): no code change — route exists, just requires `pnpm dev` restart to pick up after the PR #8 merge.
+
+---
+
+## [PR #8] feat: Spotify search dialog with play / add-to-queue
+**Branch:** `feat/spotify-search` → `master`
+**Date:** 2026-05-25
+
+### Added
+- **Search dialog** (`apps/renderer/src/widgets/spotify/SpotifySearchDialog.tsx`) — portal'd overlay, opens via 🔍 in widget header. 250ms debounced input, Esc/backdrop closes.
+- **Result rows** — thumbnail, track name, artist, duration; **▶ Play** and **+ Queue** action buttons per row with inline ✓/✗ feedback.
+- `GET /api/spotify/search?q&limit` (`packages/server/src/routes/spotify.ts`) — proxies Spotify search API (`type=track,episode`); 30s server-side cache keyed by lowercased query, LRU-evicts at 100 entries.
+- `POST /api/spotify/queue { uri, deviceId? }` — proxies `POST /v1/me/player/queue`.
+- `SpotifySearchResults` type (`packages/shared/src/types/spotify.ts`).
+- `useDebouncedValue<T>`, `useSpotifySearch`, `useQueueTrack` hooks (`useSpotify.ts`).
+- **Fixed** `.env.example` redirect URI: `http://127.0.0.1:7432/spotify/callback` → `/api/spotify/callback`.
+
+### Notes
+- `market=from_token` omitted — requires `user-read-private` scope not present in token. Spotify returns global results without it.
+- Queue requires an active playback context; 404 from Spotify if nothing is playing on a device.
+
+---
+
 ## [PR #7] feat: Spotify widget — now playing, playlists, track list, podcasts, OAuth
 **Branch:** `feature/spotify-widget` → `master`  
 **Date:** 2026-05-25

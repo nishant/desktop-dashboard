@@ -156,7 +156,9 @@ export function useSpotifyVolume() {
         old ? { ...old, volumePercent } : old,
       );
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['spotify-now-playing'] }),
+    // No onSettled invalidation — Spotify API takes a moment to reflect volume changes,
+    // so immediately refetching would overwrite the optimistic update with a stale value.
+    // The 3-second polling via useNowPlaying handles eventual sync.
   });
 }
 
