@@ -16,6 +16,21 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #18] feat: calendar widget
+**Branch:** `feat/calendar-widget` → `master`
+**Date:** 2026-05-26
+
+### Added
+- **`CalendarWidget.tsx`** — pure JS date rendering, no API. Shows one or more months depending on available space. Uses `ResizeObserver` with the callback-ref + retry-RAF pattern (same approach as `SpotifyWidget`) so it measures correctly on first render and after layout changes.
+  - Each month renders: name+year header, Su–Sa day-of-week row, 6-row × 7-col date grid (always 6 rows to prevent layout shift)
+  - Today gets a white filled circle (`bg-zinc-100 text-zinc-900`)
+  - Minimum per month: 155px wide × 195px tall. At that size or larger the widget shows additional months tiled in a CSS grid
+  - With 3+ months, the sequence anchors so the current month is second (previous month visible on the left)
+- **`calendar`** added to `WidgetId`, `WIDGET_TITLES`, `WIDGET_COMPONENTS`
+- All 7 presets in `layouts.ts` updated to include the calendar widget (each preset must cover the full grid — every preset had to be reworked to accommodate the 6th widget)
+
+---
+
 ## [PR #17] feat: titlebar with window drag + expanded layout presets
 **Branch:** `feat/titlebar-and-layouts` → `master`
 **Date:** 2026-05-25

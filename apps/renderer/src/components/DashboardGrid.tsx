@@ -8,6 +8,7 @@ import { SpotifyWidget } from '../widgets/spotify/SpotifyWidget';
 import { StocksWidget } from '../widgets/stocks/StocksWidget';
 import { HardwareWidget } from '../widgets/hardware/HardwareWidget';
 import { SoundWidget } from '../widgets/sound/SoundWidget';
+import { CalendarWidget } from '../widgets/calendar/CalendarWidget';
 import { TITLEBAR_H } from './Titlebar';
 import type { WidgetId } from '../lib/layouts';
 
@@ -22,6 +23,7 @@ const WIDGET_TITLES: Record<WidgetId, string> = {
   stocks: 'Stocks',
   hardware: 'Hardware',
   sound: 'Sound',
+  calendar: 'Calendar',
 };
 
 const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
@@ -30,6 +32,7 @@ const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
   stocks: <StocksWidget />,
   hardware: <HardwareWidget />,
   sound: <SoundWidget />,
+  calendar: <CalendarWidget />,
 };
 
 function useRowHeight(layout: Layout[]): number {
