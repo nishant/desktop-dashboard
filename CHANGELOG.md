@@ -4,7 +4,7 @@ All changes organized by pull request, newest first.
 
 ---
 
-## [PR #18] fix: weather + hardware scroll broken on Windows (callback ref)
+## [PR #19] fix: weather + hardware scroll broken on Windows (callback ref)
 **Branch:** `fix/scroll-callback-ref` → `master`
 **Date:** 2026-05-26
 
