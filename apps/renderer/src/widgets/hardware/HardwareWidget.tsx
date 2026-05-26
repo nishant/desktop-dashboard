@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { Cpu, Thermometer, HardDrive, Wifi, Battery, BatteryCharging, BarChart2, Activity, Settings } from 'lucide-react';
 import { useHardware, type HardwareHistory } from './useHardware';
@@ -399,6 +399,48 @@ export function HardwareWidget() {
   const [view, setView] = useState<ViewMode>('bars');
   const [configOpen, setConfigOpen] = useState(false);
 
+  // Callback ref so the effect wires up after loading/error resolves
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!scrollEl) return;
+
+    let isDragging = false;
+    let startY = 0;
+    let startScrollTop = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      // Don't hijack clicks on buttons/inputs inside the widget
+      if ((e.target as HTMLElement).closest('button, input, label')) return;
+      isDragging = true;
+      startY = e.pageY;
+      startScrollTop = scrollEl.scrollTop;
+      scrollEl.style.cursor = 'grabbing';
+      scrollEl.style.userSelect = 'none';
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      scrollEl.scrollTop = startScrollTop - (e.pageY - startY);
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+      scrollEl.style.cursor = '';
+      scrollEl.style.userSelect = '';
+    };
+
+    scrollEl.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      scrollEl.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [scrollEl]);
+
   if (query.isLoading) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 flex items-center justify-center h-full">
@@ -418,7 +460,7 @@ export function HardwareWidget() {
   const d = query.data;
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3 flex flex-col gap-2 h-full overflow-y-auto">
+    <div ref={setScrollEl} className="rounded-lg border border-zinc-800 bg-zinc-900 p-3 flex flex-col gap-2 h-full overflow-y-auto scrollbar-none">
       {/* Header */}
       <div className="flex items-center justify-between px-0.5 shrink-0">
         <div className="flex items-center gap-1.5">

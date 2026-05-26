@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Droplets, Wind, Zap, Umbrella } from 'lucide-react';
 import { useWeather } from './useWeather';
 import { getWeatherMeta } from './weatherCodes';
@@ -19,17 +19,20 @@ function formatDay(dateStr: string): string {
 
 export function WeatherWidget() {
   const { data, isLoading, isError } = useWeather();
-  const hourlyRef = useRef<HTMLDivElement>(null);
 
-  // Wheel: map vertical scroll to horizontal. Drag: click-and-drag to pan.
+  // Callback ref — fires when the element actually mounts (after loading resolves),
+  // unlike useRef which is null on the first render due to the early returns below.
+  const [hourlyEl, setHourlyEl] = useState<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const el = hourlyRef.current;
-    if (!el) return;
+    if (!hourlyEl) return;
 
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaX !== 0) return; // let native horizontal scroll through
+      if (e.deltaX !== 0) return; // let native horizontal scroll pass through
       e.preventDefault();
-      el.scrollLeft += e.deltaY;
+      // deltaMode 1 = line mode (Windows standard mouse); multiply to get pixels
+      const px = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY;
+      hourlyEl.scrollLeft += px;
     };
 
     let isDragging = false;
@@ -39,34 +42,34 @@ export function WeatherWidget() {
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
       startX = e.pageX;
-      startScrollLeft = el.scrollLeft;
-      el.style.cursor = 'grabbing';
-      el.style.userSelect = 'none';
+      startScrollLeft = hourlyEl.scrollLeft;
+      hourlyEl.style.cursor = 'grabbing';
+      hourlyEl.style.userSelect = 'none';
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      el.scrollLeft = startScrollLeft - (e.pageX - startX);
+      hourlyEl.scrollLeft = startScrollLeft - (e.pageX - startX);
     };
 
     const onMouseUp = () => {
       isDragging = false;
-      el.style.cursor = '';
-      el.style.userSelect = '';
+      hourlyEl.style.cursor = '';
+      hourlyEl.style.userSelect = '';
     };
 
-    el.addEventListener('wheel', onWheel, { passive: false });
-    el.addEventListener('mousedown', onMouseDown);
+    hourlyEl.addEventListener('wheel', onWheel, { passive: false });
+    hourlyEl.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
     return () => {
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('mousedown', onMouseDown);
+      hourlyEl.removeEventListener('wheel', onWheel);
+      hourlyEl.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, []);
+  }, [hourlyEl]);
 
   if (isLoading) {
     return (
@@ -125,7 +128,7 @@ export function WeatherWidget() {
       {/* Hourly strip */}
       <div className="shrink-0">
         <p className="text-zinc-600 text-xs uppercase tracking-widest mb-2">Hourly</p>
-        <div ref={hourlyRef} className="flex gap-2 overflow-x-auto scrollbar-none cursor-grab select-none">
+        <div ref={setHourlyEl} className="flex gap-2 overflow-x-auto scrollbar-none cursor-grab select-none">
           {hourly.map((h) => {
             const hMeta = getWeatherMeta(h.weatherCode);
             return (
