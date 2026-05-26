@@ -31,7 +31,7 @@ export const PRESETS: NamedLayout[] = [
     // Cols 0-13:  Stocks(h=14) + Hardware(h=8)              = 22
     // Cols 14-18: Spotify(h=9) + Weather(h=5) + Hardware(h=8) = 22
     // Cols 19-23: Spotify(h=9) + Sound(h=5)   + Hardware(h=8) = 22
-    name: 'Stocks Focus',
+    name: 'Markets',
     layout: [
       { i: 'stocks',   x: 0,  y: 0,  w: 14, h: 14, minW: 5, minH: 5 },
       { i: 'spotify',  x: 14, y: 0,  w: 10, h: 9,  minW: 4, minH: 5 },

@@ -10,7 +10,7 @@ All changes organized by pull request, newest first.
 
 ### Added
 - **`Titlebar.tsx`** — 32px bar pinned above the grid. Left side shows "nishboard" label. Entire bar carries `-webkit-app-region: drag` (Electron frameless window drag). Right side hosts the layout preset buttons with `-webkit-app-region: no-drag` so clicks register. Replaces the old floating `LayoutToolbar`.
-- **Layout presets** — 3 new presets added to `layouts.ts`:
+- **Layout presets** — renamed "Stocks Focus" → "Markets"; 3 new presets added to `layouts.ts`:
   - **Focus** — Spotify takes up a tall left column (18 rows), Stocks fills top-right (14 rows), Weather + Sound split the bottom-right, Hardware is a thin strip below Spotify.
   - **Chill** — Weather, Hardware, Sound stacked in a narrow left column; Stocks and Spotify each take a full-height column (all 22 rows) to the right.
   - **Wide** — Two big horizontal rows: Stocks + Spotify split the top 12 rows; Hardware + Weather + Sound split the bottom 10 rows.
