@@ -1,38 +1,62 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, X, ChevronRight } from 'lucide-react';
+import { Search, X, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useYoutubeSearch } from './useYoutube';
 import type { YoutubeVideo } from '@dash/shared';
 
-// ── Video player ──────────────────────────────────────────────────────────────
+type View = 'home' | 'search';
 
-function Player({ video, onClose }: { video: YoutubeVideo; onClose: () => void }) {
+const CONTROL_BAR_H = 44;
+
+// ── YouTube icon (monochrome) ──────────────────────────────────────────────────
+
+function YoutubeIcon({ size }: { size: number }) {
   return (
-    <div className="flex flex-col min-h-0 h-full">
-      {/* Iframe expands to fill container — YouTube letterboxes internally */}
-      <div className="flex-1 min-h-0">
-        <iframe
-          key={video.videoId}
-          src={`https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1&rel=0&modestbranding=1`}
-          className="w-full h-full"
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
+    <svg width={Math.round(size * 1.4286)} height={size} viewBox="0 0 20 14" fill="none">
+      <rect width="20" height="14" rx="3.1" fill="currentColor" />
+      <path d="M8 3.5L8 10.5L14 7L8 3.5Z" fill="white" />
+    </svg>
+  );
+}
 
-      {/* Title + close */}
-      <div className="flex items-start gap-2 px-3 pt-2 pb-1 shrink-0">
-        <div className="flex-1 min-w-0">
-          <p className="text-zinc-200 text-xs font-medium leading-snug line-clamp-2">{video.title}</p>
-          <p className="text-zinc-500 text-[10px] mt-0.5">{video.channelTitle}</p>
+// ── Home screen ───────────────────────────────────────────────────────────────
+
+function HomeScreen({ onSearch, height }: { onSearch: () => void; height: number }) {
+  const iconH = Math.max(20, Math.min(52, Math.round(height * 0.14)));
+  const textSize = Math.max(12, Math.min(32, Math.round(iconH * 0.85)));
+  const compact = height < 120;
+
+  if (compact) {
+    return (
+      <div className="flex items-center justify-center h-full gap-3">
+        <div className="text-zinc-700">
+          <YoutubeIcon size={iconH} />
         </div>
         <button
-          onClick={onClose}
-          className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0 mt-0.5"
-          title="Back to search"
+          onClick={onSearch}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-300 transition-colors text-[10px]"
         >
-          <X size={13} />
+          <Search size={10} />
+          Search
         </button>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5">
+      <div className="flex items-center gap-2.5 text-zinc-700">
+        <YoutubeIcon size={iconH} />
+        <span className="font-semibold tracking-tight text-zinc-600" style={{ fontSize: textSize }}>
+          YouTube
+        </span>
+      </div>
+      <button
+        onClick={onSearch}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 transition-colors text-[11px]"
+      >
+        <Search size={12} />
+        Search videos
+      </button>
     </div>
   );
 }
@@ -40,16 +64,19 @@ function Player({ video, onClose }: { video: YoutubeVideo; onClose: () => void }
 // ── Search bar ────────────────────────────────────────────────────────────────
 
 function SearchBar({
-  value, onChange, onSubmit, loading,
+  value, onChange, onSubmit, loading, onBack,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   loading: boolean;
+  onBack: () => void;
 }) {
   return (
     <div className="flex items-center gap-1.5 px-3 py-2 border-b border-zinc-800 shrink-0">
-      <Search size={12} className="text-zinc-600 shrink-0" />
+      <button onClick={onBack} className="text-zinc-600 hover:text-zinc-400 transition-colors shrink-0">
+        <ArrowLeft size={12} />
+      </button>
       <input
         type="text"
         value={value}
@@ -57,6 +84,7 @@ function SearchBar({
         onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
         placeholder="Search YouTube…"
         className="flex-1 bg-transparent text-zinc-300 text-xs placeholder-zinc-600 outline-none"
+        autoFocus
       />
       {value && (
         <button onClick={() => onChange('')} className="text-zinc-600 hover:text-zinc-400 transition-colors">
@@ -98,10 +126,8 @@ function ResultRow({ video, onPlay }: { video: YoutubeVideo; onPlay: () => void 
 
 // ── Widget root ───────────────────────────────────────────────────────────────
 
-const SEARCHBAR_H = 44;  // px — SearchBar measured height
-const MIN_RESULTS_H = 96; // px — minimum useful results scroll area
-
 export function YoutubeWidget() {
+  const [view, setView] = useState<View>('home');
   const [inputValue, setInputValue] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<YoutubeVideo | null>(null);
@@ -125,73 +151,86 @@ export function YoutubeWidget() {
 
   const { data, isFetching, isError } = useYoutubeSearch(submittedQuery);
 
+  const goHome = () => { setSelectedVideo(null); setView('home'); };
+  const goSearch = () => { setSelectedVideo(null); setView('search'); };
+
   const handleSubmit = () => {
     const q = inputValue.trim();
     if (!q) return;
-    setSelectedVideo(null);
     setSubmittedQuery(q);
     if (resultsRef.current) resultsRef.current.scrollTop = 0;
   };
 
-  const showPlayer = selectedVideo !== null;
-  // playerOnly: widget is short — player fills the whole tile, no search UI
-  const playerOnly = showPlayer && height > 0 && height <= 280;
-  // showSearchBelowPlayer: tall enough — player + search stack vertically
-  const showSearchBelowPlayer = showPlayer && height > 280;
-
-  if (playerOnly && selectedVideo) {
+  // ── Playing ───────────────────────────────────────────────────────────────────
+  if (selectedVideo) {
+    const iframeH = Math.max(60, height - CONTROL_BAR_H);
     return (
       <div ref={setContainerEl} className="h-full flex flex-col overflow-hidden">
-        <Player video={selectedVideo} onClose={() => setSelectedVideo(null)} />
+        <div className="shrink-0" style={{ height: iframeH }}>
+          <iframe
+            key={selectedVideo.videoId}
+            src={`https://www.youtube-nocookie.com/embed/${selectedVideo.videoId}?autoplay=1&rel=0&modestbranding=1`}
+            className="w-full h-full"
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+        <div
+          className="flex items-center gap-2 px-3 border-t border-zinc-800 shrink-0"
+          style={{ height: CONTROL_BAR_H }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-zinc-300 text-[11px] font-medium truncate">{selectedVideo.title}</p>
+            <p className="text-zinc-600 text-[10px] truncate">{selectedVideo.channelTitle}</p>
+          </div>
+          <button onClick={goSearch} title="Search" className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0">
+            <Search size={13} />
+          </button>
+          <button onClick={goHome} title="Close video" className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0">
+            <X size={13} />
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Player gets a fixed height that guarantees SearchBar + results always have room.
-  // Player fills that container; YouTube letterboxes the video internally.
-  const playerH = Math.max(100, height - SEARCHBAR_H - MIN_RESULTS_H);
+  // ── Home ──────────────────────────────────────────────────────────────────────
+  if (view === 'home') {
+    return (
+      <div ref={setContainerEl} className="h-full overflow-hidden">
+        <HomeScreen onSearch={() => setView('search')} height={height} />
+      </div>
+    );
+  }
 
+  // ── Search ────────────────────────────────────────────────────────────────────
   return (
     <div ref={setContainerEl} className="h-full flex flex-col overflow-hidden">
-      {showSearchBelowPlayer && selectedVideo && (
-        <div className="shrink-0" style={{ height: playerH }}>
-          <Player video={selectedVideo} onClose={() => setSelectedVideo(null)} />
-        </div>
-      )}
-
       <SearchBar
         value={inputValue}
         onChange={setInputValue}
         onSubmit={handleSubmit}
         loading={isFetching}
+        onBack={goHome}
       />
-
       <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
         {!submittedQuery && (
           <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
-            <Search size={20} className="text-zinc-700" />
+            <Search size={18} className="text-zinc-700" />
             <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
           </div>
         )}
-
         {submittedQuery && isFetching && !data && (
           <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
         )}
-
         {isError && (
           <p className="text-red-400/70 text-xs text-center py-6">
             Search failed — check YOUTUBE_API_KEY in .env
           </p>
         )}
-
         {data?.items.map((video) => (
-          <ResultRow
-            key={video.videoId}
-            video={video}
-            onPlay={() => setSelectedVideo(video)}
-          />
+          <ResultRow key={video.videoId} video={video} onPlay={() => setSelectedVideo(video)} />
         ))}
-
         {data?.items.length === 0 && (
           <p className="text-zinc-600 text-xs text-center py-6">No results</p>
         )}
