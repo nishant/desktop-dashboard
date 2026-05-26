@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #16] fix: Spotify widget resize broken on macOS fresh start
+**Branch:** `fix/spotify-resize-mac` → `master`
+**Date:** 2026-05-25
+
+### Fixed
+- **Root cause identified**: `SpotifyWidget` has conditional early returns for loading and auth states. Those views don't render the `ref={containerRef}` div, so `containerRef.current` is `null` when `useLayoutEffect([], [])` fires on first mount. With an empty dep array, the effect never re-runs once the real element appears — the ResizeObserver is never set up and the widget stays at the initial `'sm'` size forever.
+- **Fix**: Replaced `useRef` + `useLayoutEffect([])` with a `useState` callback ref (`setContainerEl`) + `useEffect([containerEl])`. React calls the callback ref when the element actually mounts (after loading/auth resolves), which updates the state and re-triggers the effect with the real element.
+- **Retained retry RAF loop**: Single RAF wasn't enough on macOS — Chromium can return `0` from `getBoundingClientRect` for multiple frames while the flex grid row is compositing. The retry loop keeps requesting frames until it gets a non-zero height, then hands off to the ResizeObserver for all subsequent updates.
+
+---
+
 ## [PR #15] fix: weather hourly strip — hide scrollbar, add wheel + drag-to-scroll
 **Branch:** `fix/weather-scrollbar-windows` → `master`
 **Date:** 2026-05-25
