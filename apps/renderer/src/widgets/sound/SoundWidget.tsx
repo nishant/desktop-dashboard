@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Volume1, Volume, Speaker, Headphones, Monitor } from 'lucide-react';
+import { Volume2, VolumeX, Volume1, Volume, Speaker, Headphones, Monitor, Mic } from 'lucide-react';
 import { useSound, useSetVolume, useSetMute, useSwitchDevice, useSetSessionVolume } from './useSound';
 import type { AudioDevice, AudioSession } from '@dash/shared';
 
@@ -56,24 +56,26 @@ function MasterSlider({
   );
 }
 
-// ── Output device card ────────────────────────────────────────────────────
+// ── Device card (output + input) ──────────────────────────────────────────
 
 function DeviceCard({
   device,
   onSwitch,
   switching,
+  isInput = false,
 }: {
   device: AudioDevice;
   onSwitch: (id: string) => void;
   switching: boolean;
+  isInput?: boolean;
 }) {
   return (
     <button
       onClick={() => !device.isDefault && !switching && onSwitch(device.id)}
-      disabled={device.isDefault || switching}
+      disabled={device.isDefault || switching || isInput}
       className={[
         'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
-        device.isDefault
+        device.isDefault || isInput
           ? 'bg-zinc-700/60 cursor-default'
           : 'hover:bg-zinc-800 cursor-pointer',
       ].join(' ')}
@@ -84,7 +86,9 @@ function DeviceCard({
         device.isDefault ? 'bg-emerald-400' : 'bg-zinc-600',
       ].join(' ')} />
 
-      <DeviceTypeIcon name={device.name} />
+      {isInput
+        ? <Mic size={13} className="shrink-0" />
+        : <DeviceTypeIcon name={device.name} />}
 
       <span className={[
         'text-xs truncate flex-1',
@@ -161,7 +165,7 @@ export function SoundWidget() {
     );
   }
 
-  const { volumePercent: vol, muted, devices, sessions } = data;
+  const { volumePercent: vol, muted, devices, inputDevices, sessions } = data;
 
   return (
     <div className="h-full flex flex-col gap-4 p-3 overflow-y-auto scrollbar-none">
@@ -210,6 +214,24 @@ export function SoundWidget() {
               Install AudioDeviceCmdlets to switch devices
             </p>
           )}
+        </div>
+      )}
+
+      {/* ── Input devices ─────────────────────────────────────────────────── */}
+      {inputDevices.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-600 px-0.5 mb-0.5">
+            Input
+          </p>
+          {inputDevices.map((d) => (
+            <DeviceCard
+              key={d.id}
+              device={d}
+              onSwitch={() => {/* input switching not yet supported */}}
+              switching={false}
+              isInput
+            />
+          ))}
         </div>
       )}
 

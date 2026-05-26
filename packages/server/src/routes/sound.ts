@@ -50,7 +50,7 @@ async function macGetData(): Promise<SoundData> {
     // SwitchAudioSource not installed — brew install switchaudio-osx
   }
 
-  return { volumePercent, muted, activeDeviceName, devices, sessions: [] };
+  return { volumePercent, muted, activeDeviceName, devices, inputDevices: [], sessions: [] };
 }
 
 async function macSetVolume(vol: number): Promise<void> {
@@ -146,7 +146,7 @@ public interface IAudioSessionEnumerator {
 [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionManager2 {
     int GetAudioSessionControl(ref Guid sessionId, uint streamFlags, out IntPtr session);
-    int GetSimpleAudioVolume(ref Guid sessionId, uint streamFlags, out IntPtr volume);
+    int GetSimpleAudioVolume(ref Guid sessionId, uint streamFlags, out ISimpleAudioVolume volume);
     int GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum);
     int RegisterSessionNotification(IntPtr client);
     int UnregisterSessionNotification(IntPtr client);
@@ -176,24 +176,29 @@ public class MMDeviceEnumerator {}
 '@
 
 # $null = ... on every COM call — prevents HRESULT leaking into the pipeline
+# Typed out-param variables are required — [ref]$untypedNull marshals as PSReference<PSObject>
+# which .NET can't properly write back. [IMMDevice]$d = $null gives PSReference<IMMDevice>.
 function Get-DefaultDevice {
     $e = [MMDeviceEnumerator]::new() -as [IMMDeviceEnumerator]
-    $d = $null
+    [IMMDevice]$d = $null
     $null = $e.GetDefaultAudioEndpoint(0, 1, [ref]$d)
     return $d
 }
 function Get-AEV {
     $g = [Guid]"5CDF2C82-841E-4546-9722-0CF74078229A"
-    $o = $null
+    [object]$o = $null
     $null = (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
     return ($o -as [IAudioEndpointVolume])
 }
-function Get-SessionEnum {
+function Get-SessionMgr {
     $g = [Guid]"77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"
-    $o = $null
+    [object]$o = $null
     $null = (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
-    $mgr = $o -as [IAudioSessionManager2]
-    $se = $null
+    return ($o -as [IAudioSessionManager2])
+}
+function Get-SessionEnum {
+    $mgr = Get-SessionMgr
+    [IAudioSessionEnumerator]$se = $null
     $null = $mgr.GetSessionEnumerator([ref]$se)
     return $se
 }
@@ -207,57 +212,101 @@ async function winGetDeviceData(): Promise<WinDeviceData> {
   // Prefer AudioDeviceCmdlets (Install-Module AudioDeviceCmdlets)
   try {
     const out = await psRun(`
-      $vol  = Get-AudioDevice -PlaybackVolume
-      $mute = Get-AudioDevice -PlaybackMute
-      $def  = (Get-AudioDevice -Playback).Name
-      $list = (Get-AudioDevice -List | Where-Object { $_.Type -eq 'Playback' } | ForEach-Object { $_.Name }) -join ','
-      "$vol|$mute|$def|$list"
+      $vol   = Get-AudioDevice -PlaybackVolume
+      $mute  = Get-AudioDevice -PlaybackMute
+      $def   = (Get-AudioDevice -Playback).Name
+      $list  = (Get-AudioDevice -List | Where-Object { $_.Type -eq 'Playback'  } | ForEach-Object { $_.Name }) -join ','
+      $idef  = try { (Get-AudioDevice -Recording).Name } catch { '' }
+      $ilist = try { (Get-AudioDevice -List | Where-Object { $_.Type -eq 'Recording' } | ForEach-Object { $_.Name }) -join ',' } catch { '' }
+      "$vol|$mute|$def|$list|$idef|$ilist"
     `);
-    const [volStr, muteStr, defName, listStr] = out.split('|');
-    const volumePercent = Math.round(Number(volStr));
+    const [volStr, muteStr, defName, listStr, idefStr, ilistStr] = out.split('|');
+    // Clamp + guard against NaN (NaN serialises to null in JSON)
+    const volumePercent = Math.min(100, Math.max(0, Math.round(Number(volStr)) || 0));
     const muted = muteStr.trim() === 'True';
     const activeDeviceName = defName.trim();
     const names = listStr ? listStr.split(',').map((s) => s.trim()).filter(Boolean) : [activeDeviceName];
     const devices: AudioDevice[] = names.map((name) => ({ id: name, name, isDefault: name === activeDeviceName }));
-    return { volumePercent, muted, activeDeviceName, devices };
+
+    const inputDefault = idefStr?.trim() ?? '';
+    const inputNames = ilistStr ? ilistStr.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const inputDevices: AudioDevice[] = inputNames.length > 0
+      ? inputNames.map((name) => ({ id: name, name, isDefault: name === inputDefault }))
+      : inputDefault ? [{ id: inputDefault, name: inputDefault, isDefault: true }] : [];
+
+    return { volumePercent, muted, activeDeviceName, devices, inputDevices };
   } catch {
     // ── WASAPI fallback — volume + mute via COM ────────────────────────────
     // Use explicit [float]/[bool] types and $null= to suppress HRESULT output.
-    const out = await psRun(`
-      ${WASAPI}
-      $v = Get-AEV
-      [float]$l = [float]0
-      [bool]$m  = [bool]$false
-      $null = $v.GetMasterVolumeLevelScalar([ref]$l)
-      $null = $v.GetMute([ref]$m)
-      "$([Math]::Round($l * 100))|$m"
-    `);
-    const [volStr, muteStr] = out.split('|');
-    const volumePercent = Math.min(100, Math.max(0, Number(volStr.trim()) || 0));
-    const muted = muteStr.trim() === 'True';
-
-    // ── Device list via CIM — no COM vtable needed ────────────────────────
-    // Win32_SoundDevice gives friendly names for all active audio endpoints.
-    let devices: AudioDevice[] = [];
-    let activeDeviceName = 'Default Output';
-    try {
-      const devOut = await psRun(`
+    const [volOut, devOut, inputOut] = await Promise.all([
+      psRun(`
+        ${WASAPI}
+        $v = Get-AEV
+        [float]$l = [float]0
+        [bool]$m  = [bool]$false
+        $null = $v.GetMasterVolumeLevelScalar([ref]$l)
+        $null = $v.GetMute([ref]$m)
+        "$([Math]::Round($l * 100))|$m"
+      `),
+      // ── Output device list via CIM — no COM vtable needed ─────────────────
+      psRun(`
         Get-CimInstance -ClassName Win32_SoundDevice |
           Where-Object { $_.Status -eq 'OK' } |
           ForEach-Object { $_.Name }
-      `);
-      const names = devOut.split('\n').map((s) => s.trim()).filter(Boolean);
-      if (names.length > 0) {
-        activeDeviceName = names[0];
-        devices = names.map((name, i) => ({ id: name, name, isDefault: i === 0 }));
-      }
-    } catch { /* leave devices as empty — widget shows nothing wrong */ }
+      `).catch(() => ''),
+      // ── Input device list via registry ────────────────────────────────────
+      // Enumerate HKLM capture device entries for friendly names.
+      // Also fetch default capture device GUID via WASAPI for isDefault flag.
+      psRun(`
+        ${WASAPI}
+        $defGuid = ''
+        try {
+          $eEnum = [MMDeviceEnumerator]::new() -as [IMMDeviceEnumerator]
+          [IMMDevice]$capDev = $null
+          $null = $eEnum.GetDefaultAudioEndpoint(1, 0, [ref]$capDev)
+          [string]$capId = ''
+          if ($null -ne $capDev) { $null = $capDev.GetId([ref]$capId) }
+          if ($capId -match '[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}') {
+            $defGuid = $matches[0].ToUpper()
+          }
+        } catch {}
+        $regBase = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Capture'
+        if (Test-Path $regBase) {
+          Get-ChildItem $regBase | ForEach-Object {
+            $guid = $_.PSChildName.Trim('{}').ToUpper()
+            $propsPath = Join-Path $_.PSPath 'Properties'
+            $name = try { Get-ItemPropertyValue -Path $propsPath -Name '{A45C254E-DF1C-4EFD-8020-67D146A850E0},14' -ErrorAction Stop } catch { $null }
+            if ($null -ne $name) { "$guid|$name|$($guid -eq $defGuid)" }
+          }
+        }
+      `).catch(() => ''),
+    ]);
 
+    const [volStr, muteStr] = volOut.split('|');
+    const volumePercent = Math.min(100, Math.max(0, Math.round(Number(volStr.trim())) || 0));
+    const muted = muteStr.trim() === 'True';
+
+    let devices: AudioDevice[] = [];
+    let activeDeviceName = 'Default Output';
+    const outNames = devOut.split('\n').map((s) => s.trim()).filter(Boolean);
+    if (outNames.length > 0) {
+      activeDeviceName = outNames[0];
+      devices = outNames.map((name, i) => ({ id: name, name, isDefault: i === 0 }));
+    }
     if (devices.length === 0) {
       devices = [{ id: 'default', name: activeDeviceName, isDefault: true }];
     }
 
-    return { volumePercent, muted, activeDeviceName, devices };
+    const inputDevices: AudioDevice[] = inputOut
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [, name, isDefaultStr] = line.split('|');
+        return { id: name, name, isDefault: isDefaultStr?.trim() === 'True' };
+      });
+
+    return { volumePercent, muted, activeDeviceName, devices, inputDevices };
   }
 }
 
@@ -269,44 +318,66 @@ async function winGetSessions(): Promise<AudioSession[]> {
     $procs = @{}
     Get-Process | ForEach-Object { $procs[[int]$_.Id] = $_.Name }
 
-    $se = Get-SessionEnum
+    # Keep $mgr in scope — needed as fallback to get ISimpleAudioVolume via
+    # GetSimpleAudioVolume(groupId) if the direct QI cast fails.
+    $mgr = Get-SessionMgr
+    if ($null -eq $mgr) { exit }
+    [IAudioSessionEnumerator]$se = $null
+    $null = $mgr.GetSessionEnumerator([ref]$se)
+    if ($null -eq $se) { exit }
+
     [int]$count = 0
     $null = $se.GetCount([ref]$count)
     $seen = @{}
     $lines = [System.Collections.Generic.List[string]]::new()
 
     for ($i = 0; $i -lt $count; $i++) {
-      $ctrl = $null
-      $null = $se.GetSession($i, [ref]$ctrl)
+      try {
+        # Typed variable required — [ref]$untypedNull won't marshal back the out param
+        [IAudioSessionControl2]$ctrl = $null
+        $null = $se.GetSession($i, [ref]$ctrl)
+        if ($null -eq $ctrl) { continue }
 
-      [int]$state = 0
-      $null = $ctrl.GetState([ref]$state)
-      if ($state -ne 1) { continue }
+        [int]$state = 0
+        $null = $ctrl.GetState([ref]$state)
+        if ($state -ne 1) { continue }
 
-      [uint32]$pid = 0
-      $null = $ctrl.GetProcessId([ref]$pid)
-      if ($seen.ContainsKey([int]$pid)) { continue }
-      $seen[[int]$pid] = $true
+        [uint32]$pid = 0
+        $null = $ctrl.GetProcessId([ref]$pid)
+        if ($seen.ContainsKey([int]$pid)) { continue }
+        $seen[[int]$pid] = $true
 
-      $isSys = ($ctrl.IsSystemSoundsSession() -eq 0)
+        $isSys = ($ctrl.IsSystemSoundsSession() -eq 0)
 
-      [string]$dn = ""
-      $null = $ctrl.GetDisplayName([ref]$dn)
-      $name = if ($isSys -or $pid -eq 0) {
-        "System Sounds"
-      } elseif ($dn -and !$dn.StartsWith("@")) {
-        $dn
-      } elseif ($procs.ContainsKey([int]$pid)) {
-        $procs[[int]$pid]
-      } else { "Unknown ($pid)" }
+        [string]$dn = ""
+        $null = $ctrl.GetDisplayName([ref]$dn)
+        $name = if ($isSys -or $pid -eq 0) {
+          "System Sounds"
+        } elseif ($dn -and !$dn.StartsWith("@")) {
+          $dn
+        } elseif ($procs.ContainsKey([int]$pid)) {
+          $procs[[int]$pid]
+        } else { "Unknown ($pid)" }
 
-      $sav = $ctrl -as [ISimpleAudioVolume]
-      [float]$l = [float]0
-      [bool]$m  = [bool]$false
-      $null = $sav.GetMasterVolume([ref]$l)
-      $null = $sav.GetMute([ref]$m)
+        # Try direct QI cast first; fall back to manager's GetSimpleAudioVolume(groupId)
+        [ISimpleAudioVolume]$sav = $ctrl -as [ISimpleAudioVolume]
+        if ($null -eq $sav) {
+          $grpId = [Guid]::Empty
+          $null = $ctrl.GetGroupingParam([ref]$grpId)
+          [ISimpleAudioVolume]$sav2 = $null
+          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$sav2)
+          $sav = $sav2
+        }
 
-      $lines.Add("$pid|$name|$([Math]::Round($l * 100))|$m")
+        [float]$l = [float]1   # default 100% if volume can't be read
+        [bool]$m  = [bool]$false
+        if ($null -ne $sav) {
+          $null = $sav.GetMasterVolume([ref]$l)
+          $null = $sav.GetMute([ref]$m)
+        }
+
+        $lines.Add("$pid|$name|$([Math]::Round($l * 100))|$m")
+      } catch { continue }
     }
     $lines -join "\`n"
   `);
@@ -331,17 +402,32 @@ async function winSetSessionVolume(pid: number, vol: number): Promise<void> {
   await psRun(`
     ${WASAPI}
     $targetPid = ${pid}
-    $se = Get-SessionEnum
+    $mgr = Get-SessionMgr
+    if ($null -eq $mgr) { exit }
+    [IAudioSessionEnumerator]$se = $null
+    $null = $mgr.GetSessionEnumerator([ref]$se)
+    if ($null -eq $se) { exit }
     [int]$count = 0
     $null = $se.GetCount([ref]$count)
     $g = [Guid]::Empty
     for ($i = 0; $i -lt $count; $i++) {
-      $ctrl = $null
-      $null = $se.GetSession($i, [ref]$ctrl)
-      [uint32]$p = 0
-      $null = $ctrl.GetProcessId([ref]$p)
-      if ($p -ne $targetPid) { continue }
-      $null = ($ctrl -as [ISimpleAudioVolume]).SetMasterVolume([float]${scalar}, [ref]$g)
+      try {
+        [IAudioSessionControl2]$ctrl = $null
+        $null = $se.GetSession($i, [ref]$ctrl)
+        if ($null -eq $ctrl) { continue }
+        [uint32]$p = 0
+        $null = $ctrl.GetProcessId([ref]$p)
+        if ($p -ne $targetPid) { continue }
+        [ISimpleAudioVolume]$sav = $ctrl -as [ISimpleAudioVolume]
+        if ($null -eq $sav) {
+          $grpId = [Guid]::Empty
+          $null = $ctrl.GetGroupingParam([ref]$grpId)
+          [ISimpleAudioVolume]$sav2 = $null
+          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$sav2)
+          $sav = $sav2
+        }
+        if ($null -ne $sav) { $null = $sav.SetMasterVolume([float]${scalar}, [ref]$g) }
+      } catch { continue }
     }
   `);
 }

@@ -15,6 +15,7 @@ export interface SoundData {
   volumePercent: number;
   muted: boolean;
   activeDeviceName: string;
-  devices: AudioDevice[];
-  sessions: AudioSession[]; // empty on macOS
+  devices: AudioDevice[];       // playback/output
+  inputDevices: AudioDevice[];  // capture/recording
+  sessions: AudioSession[];     // empty on macOS
 }

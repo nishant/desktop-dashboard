@@ -27,7 +27,9 @@ export function useSetVolume() {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(['sound'], ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['sound'] }),
+    // No onSettled invalidation — Windows audio API returns stale volume for ~1s
+    // after Set-AudioDevice, which would overwrite the optimistic value with NaN
+    // (serialised as null in JSON). The 5s polling interval syncs eventually.
   });
 }
 
