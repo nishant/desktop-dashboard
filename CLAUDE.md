@@ -49,3 +49,14 @@ Personal ambient desktop dashboard for Nish, running all day on a secondary moni
 - Call out TODOs, gotchas, and platform-specific branching explicitly
 - Label Windows-only vs macOS-only behavior clearly
 - Flag API rate limits or auth quirks immediately
+
+## Git Workflow
+1. **Branch first** — `git checkout -b <branch>` before touching any files. Never make changes on `master` then branch for the PR.
+2. **Update CHANGELOG.md** on the branch before opening the PR. New entries go at the top (newest first). Cover every meaningful change and architectural decision.
+3. **Commit, push, `gh pr create`, merge** — in that order.
+4. Branch naming: `feat/<slug>` for features, `fix/<slug>` for fixes.
+
+## Memory Protocol
+When Nish gives feedback or states a preference, add it to **both**:
+- `CLAUDE.md` (this file, committed — travels with the repo to all machines)
+- `~/.claude/projects/-Users-nishant-Code-desktop-dashboard/memory/` (local auto-memory for this machine)
