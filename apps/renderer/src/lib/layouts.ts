@@ -1,6 +1,6 @@
 import type { Layout } from 'react-grid-layout';
 
-export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar';
+export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar' | 'youtube';
 
 export interface NamedLayout {
   name: string;
@@ -130,6 +130,22 @@ export const PRESETS: NamedLayout[] = [
       { i: 'sound',    x: 12, y: 11, w: 7,  h: 5,  minW: 3, minH: 3 },
       { i: 'calendar', x: 12, y: 16, w: 7,  h: 6,  minW: 4, minH: 4 },
       { i: 'weather',  x: 19, y: 11, w: 5,  h: 11, minW: 4, minH: 4 },
+    ],
+  },
+  {
+    // YouTube player hero left, supporting widgets right + bottom.
+    // Cols  0-13: youtube(h=14) + hardware(h=8)               = 22
+    // Cols 14-19: spotify(h=8)  + stocks(h=6)  + calendar(h=8) = 22
+    // Cols 20-23: spotify(h=8)  + stocks(h=6)  + weather(h=4) + sound(h=4) = 22
+    name: 'YouTube',
+    layout: [
+      { i: 'youtube',  x: 0,  y: 0,  w: 14, h: 14, minW: 6, minH: 6 },
+      { i: 'spotify',  x: 14, y: 0,  w: 10, h: 8,  minW: 4, minH: 5 },
+      { i: 'stocks',   x: 14, y: 8,  w: 10, h: 6,  minW: 5, minH: 5 },
+      { i: 'hardware', x: 0,  y: 14, w: 14, h: 8,  minW: 6, minH: 4 },
+      { i: 'calendar', x: 14, y: 14, w: 6,  h: 8,  minW: 4, minH: 4 },
+      { i: 'weather',  x: 20, y: 14, w: 4,  h: 4,  minW: 4, minH: 4 },
+      { i: 'sound',    x: 20, y: 18, w: 4,  h: 4,  minW: 3, minH: 3 },
     ],
   },
 ];

@@ -4,6 +4,32 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #20] feat: YouTube widget
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Added
+- **`YoutubeWidget.tsx`** — search + embedded player widget.
+  - Search bar triggers on Enter or arrow button; results are cached 5 min (TanStack Query). No auto-search on keystroke — preserves API quota.
+  - Clicking a result plays it in a `youtube-nocookie.com/embed/` iframe with `autoplay=1`. Works natively in Electron's Chromium renderer without any extra configuration.
+  - Adaptive layout: if the tile height ≤ 280px, shows player full-tile with a close button. Above that, player + search bar + results list stack vertically.
+  - Error state shown when `YOUTUBE_API_KEY` is missing or the API returns an error.
+- **`packages/server/src/routes/youtube.ts`** — `GET /api/youtube/search?q=&pageToken=`. Calls YouTube Data API v3, decodes HTML entities in titles, returns `YoutubeSearchPage`. Returns 503 if `YOUTUBE_API_KEY` is not set.
+- **`packages/shared/src/types/youtube.ts`** — `YoutubeVideo`, `YoutubeSearchPage` types.
+- **`useYoutube.ts`** — `useYoutubeSearch(query)` hook; query is only enabled when non-empty.
+- **YouTube preset** in `layouts.ts` — all 7 widgets (including youtube). Existing 7 presets remain unchanged (they cover the full grid with 6 widgets; youtube only appears in this preset).
+- **`.env`** — `YOUTUBE_API_KEY=` placeholder added.
+
+### Changed
+- `WidgetId` extended to include `'youtube'`.
+- `DashboardGrid` — youtube added to `WIDGET_TITLES` and `WIDGET_COMPONENTS`.
+- `packages/server/src/index.ts` — youtube route registered at `/api/youtube`.
+
+### API key required
+YouTube Data API v3 key from Google Cloud Console. Free tier: 10,000 units/day; search costs 100 units (~100 searches/day free). See PR description for setup steps.
+
+---
+
 ## [PR #19] fix: weather + hardware scroll broken on Windows (callback ref)
 **Branch:** `fix/scroll-callback-ref` → `master`
 **Date:** 2026-05-26
