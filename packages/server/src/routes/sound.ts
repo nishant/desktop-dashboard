@@ -140,14 +140,18 @@ public interface IAudioSessionControl2 {
 [Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionEnumerator {
     int GetCount(out int count);
-    int GetSession(int index, out IAudioSessionControl2 session);
+    // out object + IUnknown marshal is the only pattern that reliably works for
+    // custom Add-Type interfaces — PowerShell can't marshal PSReference<IFoo>
+    // back through a typed out param; it needs [MarshalAs(UnmanagedType.IUnknown)]
+    // + the -as cast in PowerShell (same pattern used by IMMDevice.Activate).
+    int GetSession(int index, [MarshalAs(UnmanagedType.IUnknown)] out object session);
 }
 
 [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionManager2 {
     int GetAudioSessionControl(ref Guid sessionId, uint streamFlags, out IntPtr session);
-    int GetSimpleAudioVolume(ref Guid sessionId, uint streamFlags, out ISimpleAudioVolume volume);
-    int GetSessionEnumerator(out IAudioSessionEnumerator sessionEnum);
+    int GetSimpleAudioVolume(ref Guid sessionId, uint streamFlags, [MarshalAs(UnmanagedType.IUnknown)] out object volume);
+    int GetSessionEnumerator([MarshalAs(UnmanagedType.IUnknown)] out object sessionEnum);
     int RegisterSessionNotification(IntPtr client);
     int UnregisterSessionNotification(IntPtr client);
     int RegisterDuckNotification([MarshalAs(UnmanagedType.LPWStr)] string sessionId, IntPtr client);
@@ -165,8 +169,8 @@ public interface IMMDevice {
 [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IMMDeviceEnumerator {
     int EnumAudioEndpoints(int f, uint s, out IntPtr pp);
-    int GetDefaultAudioEndpoint(int f, int r, out IMMDevice pp);
-    int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice pp);
+    int GetDefaultAudioEndpoint(int f, int r, [MarshalAs(UnmanagedType.IUnknown)] out object pp);
+    int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, [MarshalAs(UnmanagedType.IUnknown)] out object pp);
     int RegisterEndpointNotificationCallback(IntPtr p);
     int UnregisterEndpointNotificationCallback(IntPtr p);
 }
@@ -175,14 +179,15 @@ public interface IMMDeviceEnumerator {
 public class MMDeviceEnumerator {}
 '@
 
-# $null = ... on every COM call — prevents HRESULT leaking into the pipeline
-# Typed out-param variables are required — [ref]$untypedNull marshals as PSReference<PSObject>
-# which .NET can't properly write back. [IMMDevice]$d = $null gives PSReference<IMMDevice>.
+# All COM interface out-params use [MarshalAs(UnmanagedType.IUnknown)] out object in C#
+# and [object]$o = $null + ($o -as [IFoo]) in PowerShell.
+# This is the only pattern that reliably marshals back through custom Add-Type interfaces —
+# identical to how IMMDevice.Activate already works.
 function Get-DefaultDevice {
     $e = [MMDeviceEnumerator]::new() -as [IMMDeviceEnumerator]
-    [IMMDevice]$d = $null
-    $null = $e.GetDefaultAudioEndpoint(0, 1, [ref]$d)
-    return $d
+    [object]$o = $null
+    $null = $e.GetDefaultAudioEndpoint(0, 1, [ref]$o)
+    return ($o -as [IMMDevice])
 }
 function Get-AEV {
     $g = [Guid]"5CDF2C82-841E-4546-9722-0CF74078229A"
@@ -195,12 +200,6 @@ function Get-SessionMgr {
     [object]$o = $null
     $null = (Get-DefaultDevice).Activate([ref]$g, 23, [IntPtr]::Zero, [ref]$o)
     return ($o -as [IAudioSessionManager2])
-}
-function Get-SessionEnum {
-    $mgr = Get-SessionMgr
-    [IAudioSessionEnumerator]$se = $null
-    $null = $mgr.GetSessionEnumerator([ref]$se)
-    return $se
 }
 `;
 
@@ -262,8 +261,9 @@ async function winGetDeviceData(): Promise<WinDeviceData> {
         $defGuid = ''
         try {
           $eEnum = [MMDeviceEnumerator]::new() -as [IMMDeviceEnumerator]
-          [IMMDevice]$capDev = $null
-          $null = $eEnum.GetDefaultAudioEndpoint(1, 0, [ref]$capDev)
+          [object]$co = $null
+          $null = $eEnum.GetDefaultAudioEndpoint(1, 0, [ref]$co)
+          $capDev = $co -as [IMMDevice]
           [string]$capId = ''
           if ($null -ne $capDev) { $null = $capDev.GetId([ref]$capId) }
           if ($capId -match '[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}') {
@@ -318,12 +318,13 @@ async function winGetSessions(): Promise<AudioSession[]> {
     $procs = @{}
     Get-Process | ForEach-Object { $procs[[int]$_.Id] = $_.Name }
 
-    # Keep $mgr in scope — needed as fallback to get ISimpleAudioVolume via
-    # GetSimpleAudioVolume(groupId) if the direct QI cast fails.
     $mgr = Get-SessionMgr
     if ($null -eq $mgr) { exit }
-    [IAudioSessionEnumerator]$se = $null
-    $null = $mgr.GetSessionEnumerator([ref]$se)
+
+    # GetSessionEnumerator: out object pattern (same as Activate) then -as cast
+    [object]$seo = $null
+    $null = $mgr.GetSessionEnumerator([ref]$seo)
+    $se = $seo -as [IAudioSessionEnumerator]
     if ($null -eq $se) { exit }
 
     [int]$count = 0
@@ -333,9 +334,10 @@ async function winGetSessions(): Promise<AudioSession[]> {
 
     for ($i = 0; $i -lt $count; $i++) {
       try {
-        # Typed variable required — [ref]$untypedNull won't marshal back the out param
-        [IAudioSessionControl2]$ctrl = $null
-        $null = $se.GetSession($i, [ref]$ctrl)
+        # GetSession: out object + -as cast (typed out-param doesn't marshal back)
+        [object]$so = $null
+        $null = $se.GetSession($i, [ref]$so)
+        $ctrl = $so -as [IAudioSessionControl2]
         if ($null -eq $ctrl) { continue }
 
         [int]$state = 0
@@ -359,14 +361,14 @@ async function winGetSessions(): Promise<AudioSession[]> {
           $procs[[int]$pid]
         } else { "Unknown ($pid)" }
 
-        # Try direct QI cast first; fall back to manager's GetSimpleAudioVolume(groupId)
-        [ISimpleAudioVolume]$sav = $ctrl -as [ISimpleAudioVolume]
+        # Try direct QI first; fall back to GetSimpleAudioVolume(groupId) via manager
+        $sav = $ctrl -as [ISimpleAudioVolume]
         if ($null -eq $sav) {
           $grpId = [Guid]::Empty
           $null = $ctrl.GetGroupingParam([ref]$grpId)
-          [ISimpleAudioVolume]$sav2 = $null
-          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$sav2)
-          $sav = $sav2
+          [object]$svo = $null
+          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$svo)
+          $sav = $svo -as [ISimpleAudioVolume]
         }
 
         [float]$l = [float]1   # default 100% if volume can't be read
@@ -404,27 +406,29 @@ async function winSetSessionVolume(pid: number, vol: number): Promise<void> {
     $targetPid = ${pid}
     $mgr = Get-SessionMgr
     if ($null -eq $mgr) { exit }
-    [IAudioSessionEnumerator]$se = $null
-    $null = $mgr.GetSessionEnumerator([ref]$se)
+    [object]$seo = $null
+    $null = $mgr.GetSessionEnumerator([ref]$seo)
+    $se = $seo -as [IAudioSessionEnumerator]
     if ($null -eq $se) { exit }
     [int]$count = 0
     $null = $se.GetCount([ref]$count)
     $g = [Guid]::Empty
     for ($i = 0; $i -lt $count; $i++) {
       try {
-        [IAudioSessionControl2]$ctrl = $null
-        $null = $se.GetSession($i, [ref]$ctrl)
+        [object]$so = $null
+        $null = $se.GetSession($i, [ref]$so)
+        $ctrl = $so -as [IAudioSessionControl2]
         if ($null -eq $ctrl) { continue }
         [uint32]$p = 0
         $null = $ctrl.GetProcessId([ref]$p)
         if ($p -ne $targetPid) { continue }
-        [ISimpleAudioVolume]$sav = $ctrl -as [ISimpleAudioVolume]
+        $sav = $ctrl -as [ISimpleAudioVolume]
         if ($null -eq $sav) {
           $grpId = [Guid]::Empty
           $null = $ctrl.GetGroupingParam([ref]$grpId)
-          [ISimpleAudioVolume]$sav2 = $null
-          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$sav2)
-          $sav = $sav2
+          [object]$svo = $null
+          $null = $mgr.GetSimpleAudioVolume([ref]$grpId, 0, [ref]$svo)
+          $sav = $svo -as [ISimpleAudioVolume]
         }
         if ($null -ne $sav) { $null = $sav.SetMasterVolume([float]${scalar}, [ref]$g) }
       } catch { continue }
@@ -436,7 +440,10 @@ async function winGetData(): Promise<SoundData> {
   // Run device query and session enumeration in parallel
   const [deviceData, sessions] = await Promise.all([
     winGetDeviceData(),
-    winGetSessions().catch((): AudioSession[] => []),
+    winGetSessions().catch((err): AudioSession[] => {
+      console.error('[sound] session enumeration failed:', err instanceof Error ? err.message : String(err));
+      return [];
+    }),
   ]);
   return { ...deviceData, sessions };
 }
