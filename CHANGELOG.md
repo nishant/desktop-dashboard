@@ -4,6 +4,19 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #22] feat: youtube widget UX polish
+**Branch:** `feat/youtube-widget` → `master`
+**Date:** 2026-05-26
+
+### Changed
+- **`YoutubeWidget.tsx`** — full state machine redesign (home / search / playing).
+  - **Home screen**: greyscale YouTube icon SVG + "YouTube" wordmark, both scaling dynamically with widget height (14% of height, clamped 20–52px). Below 120px collapses to compact horizontal layout. "Search videos" pill opens search.
+  - **Search view**: back arrow (← returns to player if a video is loaded, otherwise home) + search input with `autoFocus` + results list.
+  - **Playing view**: iframe fills `height − 44px`. Fixed 44px control bar shows title + channel + search icon (opens search without stopping playback) + X (closes video → home). Scrubber always fully visible.
+  - **Resume on back**: clicking search while a video plays keeps the iframe mounted at `height: 0; overflow: hidden` — YouTube preserves the playback position. Clicking back restores the iframe to full height, resuming exactly where playback was. Selecting a new result while something is playing replaces the video correctly.
+
+---
+
 ## [PR #21] feat: youtube in all layouts + autoFillLayout
 **Branch:** `feat/youtube-widget` → `master`
 **Date:** 2026-05-26
