@@ -37,6 +37,15 @@ body,
   opacity: 1;
 }
 
+/* Hide scrollbar but keep scroll functionality (cross-platform, incl. Windows Electron) */
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;            /* Chrome / WebKit / Electron */
+}
+
 /* Remove default placeholder styling and use our own */
 .react-grid-item.react-grid-placeholder {
   background: theme('colors.zinc.800');
