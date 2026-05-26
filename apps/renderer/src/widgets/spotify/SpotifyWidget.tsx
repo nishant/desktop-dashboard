@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import {
   Play, Pause, SkipForward, SkipBack,
   Shuffle, Repeat, Repeat1, Volume2, VolumeX,
@@ -54,6 +54,51 @@ function useIntersectionCallback(cb: () => void, deps: unknown[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return ref;
+}
+
+// ── Scrolling text marquee ────────────────────────────────────────────────────
+// Renders text that scrolls horizontally when it overflows its container.
+// Pattern: 2s pause → scroll at 40px/s → 2s pause → instant reset → repeat.
+
+function ScrollingText({ text, className }: { text: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const textEl = textRef.current;
+    if (!container || !textEl) return;
+
+    const overflow = textEl.scrollWidth - container.clientWidth;
+    if (overflow <= 0) return; // fits — no animation needed
+
+    const PAUSE_MS = 2000;
+    const scrollMs = (overflow / 40) * 1000; // 40px/s
+    const totalMs = PAUSE_MS + scrollMs + PAUSE_MS;
+
+    const p1 = PAUSE_MS / totalMs;
+    const p2 = (PAUSE_MS + scrollMs) / totalMs;
+
+    const anim = textEl.animate(
+      [
+        { transform: 'translateX(0)',           offset: 0  },
+        { transform: 'translateX(0)',           offset: p1 },
+        { transform: `translateX(-${overflow}px)`, offset: p2 },
+        { transform: `translateX(-${overflow}px)`, offset: 1  },
+      ],
+      { duration: totalMs, iterations: Infinity, easing: 'linear' },
+    );
+
+    return () => anim.cancel();
+  }, [text]);
+
+  return (
+    <div ref={containerRef} className="overflow-hidden w-full">
+      <span ref={textRef} className={`inline-block whitespace-nowrap ${className ?? ''}`}>
+        {text}
+      </span>
+    </div>
+  );
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
@@ -595,10 +640,13 @@ function NowPlayingView({
         {/* Title + artist + action icons */}
         <div className="flex items-start gap-2 shrink-0">
           <div className="min-w-0 flex-1">
-            <p className={`font-medium text-zinc-100 truncate leading-tight ${size === 'xl' ? 'text-base' : 'text-sm'}`}>
-              {data.trackName || '—'}
-            </p>
-            <p className="text-xs text-zinc-400 truncate mt-0.5">{data.artistName}</p>
+            <ScrollingText
+              text={data.trackName || '—'}
+              className={`font-medium text-zinc-100 leading-tight ${size === 'xl' ? 'text-base' : 'text-sm'}`}
+            />
+            <div className="mt-0.5">
+              <ScrollingText text={data.artistName} className="text-xs text-zinc-400" />
+            </div>
           </div>
           {actionIcons}
         </div>
@@ -651,16 +699,22 @@ function NowPlayingView({
     </div>
   );
 
+  // xs: pack everything together in the centre — no wasted gap
+  // sm: justify-between fills the taller height naturally
+  const compactJustify = size === 'xs' ? 'justify-center gap-3' : 'justify-between';
+
   return (
-    <div className="flex-1 flex flex-col justify-between px-4 pb-4 pt-2">
+    <div className={`flex-1 flex flex-col ${compactJustify} px-4 pb-4 pt-2`}>
       {/* Top: art + track info */}
       <div className="flex gap-3 items-center min-w-0">
         {artEl}
         <div className="min-w-0 flex-1">
-          <p className="text-zinc-100 text-sm font-medium truncate leading-tight">{data.trackName || '—'}</p>
-          <p className="text-zinc-400 text-xs truncate mt-0.5">{data.artistName}</p>
+          <ScrollingText text={data.trackName || '—'} className="text-zinc-100 text-sm font-medium leading-tight" />
+          <div className="mt-0.5">
+            <ScrollingText text={data.artistName} className="text-zinc-400 text-xs" />
+          </div>
           {!isPodcast && data.albumName && (
-            <p className="text-zinc-600 text-xs truncate">{data.albumName}</p>
+            <ScrollingText text={data.albumName} className="text-zinc-600 text-xs" />
           )}
           {isPodcast && <p className="text-[10px] text-purple-400/70 mt-0.5">Podcast</p>}
         </div>
@@ -745,19 +799,27 @@ export function SpotifyWidget() {
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // Responsive sizing — compact < 280px height, expanded ≥ 280px
+  // Responsive sizing — measure container height via ResizeObserver.
+  // useLayoutEffect fires synchronously after DOM paint so flex dimensions
+  // are always resolved before the first observation.
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<SizeVariant>('sm');
-  useEffect(() => {
+
+  const classify = (h: number): SizeVariant => {
+    if (h < 200) return 'xs';
+    if (h < 300) return 'sm';
+    if (h < 400) return 'md';
+    if (h < 480) return 'lg';
+    return 'xl';
+  };
+
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    // Seed the initial size immediately from the current DOM dimensions
+    setSize(classify(el.getBoundingClientRect().height));
     const ro = new ResizeObserver(([entry]) => {
-      const h = entry.contentRect.height;
-      if (h < 200) setSize('xs');
-      else if (h < 300) setSize('sm');
-      else if (h < 400) setSize('md');
-      else if (h < 480) setSize('lg');
-      else setSize('xl');
+      setSize(classify(entry.contentRect.height));
     });
     ro.observe(el);
     return () => ro.disconnect();

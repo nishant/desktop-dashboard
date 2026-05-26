@@ -4,6 +4,19 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #12] feat: Spotify scrolling text marquee + ResizeObserver timing fix
+**Branch:** `fix/spotify-bugfixes` → `master`
+**Date:** 2026-05-25
+
+### Added
+- **Scrolling text** (`SpotifyWidget.tsx`) — track name, artist, and album name now scroll horizontally instead of truncating with `…`. Pattern: 2s pause → smooth scroll at 40px/s → 2s pause → instant reset → repeat. Uses the Web Animations API (`element.animate()`). Short text that fits the container is left static (no animation started).
+
+### Fixed
+- **ResizeObserver timing** — replaced `useEffect` with `useLayoutEffect` for the `ResizeObserver` that drives size variants. Also seeds the initial `SizeVariant` immediately from `getBoundingClientRect()` before the first observer callback, preventing a stuck `sm` layout on fresh page load.
+- **`xs` empty-space gap** — `justify-between` on the compact layout was leaving a large dead zone when the tile is very short. `xs` now uses `justify-center gap-3` to pack content together; `sm` keeps `justify-between`.
+
+---
+
 ## [PR #11] feat: Spotify widget — 5-tier responsive layout
 **Branch:** `fix/spotify-bugfixes` → `master`
 **Date:** 2026-05-25
