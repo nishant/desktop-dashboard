@@ -34,9 +34,15 @@ function MasterSlider({
 }) {
   const [local, setLocal] = useState(value);
   const pointerDown = useRef(false);
+  const lastChangedAt = useRef(0); // ms timestamp of last user interaction
 
   useEffect(() => {
-    if (!pointerDown.current) setLocal(value);
+    if (pointerDown.current) return;
+    // Ignore external value updates for 3s after the user last touched the
+    // slider — Windows audio API lags behind Set-AudioDevice, so the first
+    // poll after a change can return the old (or zero) value.
+    if (Date.now() - lastChangedAt.current < 3000) return;
+    setLocal(value);
   }, [value]);
 
   return (
@@ -48,7 +54,11 @@ function MasterSlider({
       disabled={muted}
       onChange={(e) => setLocal(Number(e.target.value))}
       onPointerDown={() => { pointerDown.current = true; }}
-      onPointerUp={() => { pointerDown.current = false; onChange(local); }}
+      onPointerUp={() => {
+        pointerDown.current = false;
+        lastChangedAt.current = Date.now();
+        onChange(local);
+      }}
       className="w-full h-1.5 rounded-full appearance-none cursor-pointer
         bg-zinc-700 accent-zinc-200
         disabled:opacity-40 disabled:cursor-not-allowed"

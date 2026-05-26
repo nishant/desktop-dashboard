@@ -539,7 +539,14 @@ export const soundRoutes: FastifyPluginAsync = async (fastify) => {
       }
       try {
         await setVolume(volumePercent);
-        cache.clear();
+        // Patch cache with the value we just set rather than clearing it.
+        // Windows audio API lags ~1s after Set-AudioDevice — clearing the cache
+        // forces an immediate re-read that returns the old/zero value, which then
+        // overwrites the optimistic update on the client's next poll.
+        const existing = cache.get();
+        if (existing) {
+          cache.set({ ...existing, volumePercent: Math.round(volumePercent) }, TTL_MS);
+        }
         return reply.send({ ok: true });
       } catch (err) {
         return reply.code(502).send({ error: err instanceof Error ? err.message : String(err) });
@@ -552,7 +559,11 @@ export const soundRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       try {
         await setMute(req.body.muted);
-        cache.clear();
+        // Same pattern — patch muted flag rather than force a re-read.
+        const existing = cache.get();
+        if (existing) {
+          cache.set({ ...existing, muted: req.body.muted }, TTL_MS);
+        }
         return reply.send({ ok: true });
       } catch (err) {
         return reply.code(502).send({ error: err instanceof Error ? err.message : String(err) });
