@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Layout } from 'react-grid-layout';
-import { DEFAULT_LAYOUT, PRESETS, autoFillLayout, ALL_WIDGET_IDS } from '../lib/layouts';
+import { DEFAULT_LAYOUT, PRESETS, autoFillLayout, generateLayout, ALL_WIDGET_IDS } from '../lib/layouts';
 import type { WidgetId } from '../lib/layouts';
 
 interface LayoutState {
@@ -30,11 +30,20 @@ export const useLayoutStore = create<LayoutState>()(
 
       applyPreset: (name) => {
         const preset = PRESETS.find((p) => p.name === name);
-        if (preset) set({ layout: autoFillLayout(preset.layout), activePreset: name });
+        if (!preset) return;
+        set((s) => ({
+          layout: generateLayout(name, s.visibleWidgets) ?? autoFillLayout(preset.layout),
+          activePreset: name,
+        }));
       },
 
       resetToDefault: () =>
-        set({ layout: autoFillLayout(DEFAULT_LAYOUT.layout), activePreset: DEFAULT_LAYOUT.name }),
+        set((s) => ({
+          layout:
+            generateLayout(DEFAULT_LAYOUT.name, s.visibleWidgets) ??
+            autoFillLayout(DEFAULT_LAYOUT.layout),
+          activePreset: DEFAULT_LAYOUT.name,
+        })),
 
       pinPreset: (name) =>
         set((s) => ({
@@ -47,14 +56,31 @@ export const useLayoutStore = create<LayoutState>()(
         set((s) => ({ pinnedPresets: s.pinnedPresets.filter((p) => p !== name) })),
 
       showWidget: (id) =>
-        set((s) => ({
-          visibleWidgets: s.visibleWidgets.includes(id)
-            ? s.visibleWidgets
-            : [...s.visibleWidgets, id],
-        })),
+        set((s) => {
+          if (s.visibleWidgets.includes(id)) return s;
+          const newVisible = [...s.visibleWidgets, id];
+          if (s.activePreset) {
+            const generated = generateLayout(s.activePreset, newVisible);
+            if (generated) return { visibleWidgets: newVisible, layout: generated };
+          }
+          // No active preset — ensure the widget has a grid slot (BSP generation may have
+          // excluded it from layout when it was hidden, so it would never appear otherwise).
+          const hasSlot = s.layout.some((item) => item.i === id);
+          return {
+            visibleWidgets: newVisible,
+            layout: hasSlot ? s.layout : autoFillLayout(s.layout),
+          };
+        }),
 
       hideWidget: (id) =>
-        set((s) => ({ visibleWidgets: s.visibleWidgets.filter((w) => w !== id) })),
+        set((s) => {
+          const newVisible = s.visibleWidgets.filter((w) => w !== id);
+          if (s.activePreset) {
+            const generated = generateLayout(s.activePreset, newVisible);
+            if (generated) return { visibleWidgets: newVisible, layout: generated };
+          }
+          return { visibleWidgets: newVisible };
+        }),
     }),
     {
       name: 'dashboard-layout',
