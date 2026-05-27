@@ -56,11 +56,11 @@ function QuoteCard({ q }: { q: StockQuote }) {
   const Icon = positive ? TrendingUp : TrendingDown;
 
   return (
-    <div className="bg-zinc-800/60 rounded-lg p-2.5 flex flex-col gap-1 min-w-0">
+    <div className="bg-th-elevated/60 rounded-lg p-2.5 flex flex-col gap-1 min-w-0">
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1 min-w-0">
           <Icon size={12} className={`${color} shrink-0`} />
-          <span className="font-mono font-bold text-white text-sm leading-none truncate">
+          <span className="font-mono font-bold text-th-hi text-sm leading-none truncate">
             {q.ticker}
           </span>
         </div>
@@ -70,7 +70,7 @@ function QuoteCard({ q }: { q: StockQuote }) {
       </div>
 
       <div className="flex items-baseline justify-between gap-1">
-        <span className="font-mono text-white text-base font-semibold tabular-nums leading-none">
+        <span className="font-mono text-th-hi text-base font-semibold tabular-nums leading-none">
           {fmtPrice(q.lastPrice)}
         </span>
         <span className={`font-mono text-xs tabular-nums ${color} shrink-0`}>
@@ -102,12 +102,12 @@ function WatchlistModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 rounded-lg">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 w-72 max-h-[80%] flex flex-col gap-3 shadow-xl">
+      <div className="bg-th-surface border border-th-line rounded-xl p-4 w-72 max-h-[80%] flex flex-col gap-3 shadow-xl">
         <div className="flex items-center justify-between">
-          <span className="text-white font-semibold text-sm">Edit Watchlist</span>
+          <span className="text-th-hi font-semibold text-sm">Edit Watchlist</span>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-white transition-colors"
+            className="text-th-3 hover:text-th-hi transition-colors"
           >
             <X size={16} />
           </button>
@@ -120,12 +120,12 @@ function WatchlistModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKey}
             placeholder="Add ticker…"
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white text-xs font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+            className="flex-1 bg-th-elevated border border-th-line rounded-lg px-3 py-1.5 text-th-hi text-xs font-mono placeholder:text-th-ghost focus:outline-none focus:border-th-3"
             autoFocus
           />
           <button
             onClick={submit}
-            className="bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg px-2.5 py-1.5 transition-colors"
+            className="bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded-lg px-2.5 py-1.5 transition-colors"
           >
             <Plus size={14} />
           </button>
@@ -135,12 +135,12 @@ function WatchlistModal({ onClose }: { onClose: () => void }) {
           {watchlist.map((ticker) => (
             <div
               key={ticker}
-              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-zinc-800 group"
+              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-th-elevated group"
             >
-              <span className="font-mono text-white text-xs">{ticker}</span>
+              <span className="font-mono text-th-hi text-xs">{ticker}</span>
               <button
                 onClick={() => removeTicker(ticker)}
-                className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                className="text-th-ghost hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
               >
                 <X size={12} />
               </button>
@@ -148,7 +148,7 @@ function WatchlistModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        <p className="text-zinc-600 text-[10px]">
+        <p className="text-th-ghost text-[10px]">
           Note: US equities only (Alpaca IEX feed). Futures/crypto tickers not supported.
         </p>
       </div>
@@ -178,14 +178,14 @@ export function StocksWidget() {
     <div className="relative h-full flex flex-col overflow-hidden">
       {editing && <WatchlistModal onClose={() => setEditing(false)} />}
 
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800 shrink-0">
-        <span className={`text-[10px] flex items-center gap-1.5 ${session === 'closed' ? 'text-zinc-600' : 'text-zinc-500'}`}>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-th-line shrink-0">
+        <span className={`text-[10px] flex items-center gap-1.5 ${session === 'closed' ? 'text-th-ghost' : 'text-th-3'}`}>
           <span className={`h-1.5 w-1.5 rounded-full inline-block shrink-0 ${sessionDot[session]}`} />
           {sessionLabel[session]}
         </span>
         <button
           onClick={() => setEditing(true)}
-          className="text-zinc-600 hover:text-zinc-300 transition-colors p-0.5"
+          className="text-th-ghost hover:text-th-hi transition-colors p-0.5"
           title="Edit watchlist"
         >
           <Pencil size={12} />
@@ -194,7 +194,7 @@ export function StocksWidget() {
 
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading && (
-          <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+          <div className="h-full flex items-center justify-center text-th-3 text-sm">
             Loading…
           </div>
         )}

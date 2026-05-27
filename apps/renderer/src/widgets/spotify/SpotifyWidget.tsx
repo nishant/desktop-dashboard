@@ -162,7 +162,7 @@ function ProgressBar({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-zinc-500 text-[10px] w-7 text-right tabular-nums">{fmtMs(localMs)}</span>
+      <span className="text-th-3 text-[10px] w-7 text-right tabular-nums">{fmtMs(localMs)}</span>
       <div className="flex-1 relative h-1 group cursor-pointer">
         <input
           type="range" min={0} max={durationMs} value={localMs}
@@ -173,14 +173,14 @@ function ProgressBar({
           }}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
-        <div className="w-full h-full rounded-full bg-zinc-700">
+        <div className="w-full h-full rounded-full bg-th-overlay">
           <div
-            className="h-full rounded-full bg-zinc-200 group-hover:bg-[#1DB954] transition-colors"
+            className="h-full rounded-full bg-th-hi group-hover:bg-[#1DB954] transition-colors"
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-      <span className="text-zinc-500 text-[10px] w-7 tabular-nums">{fmtMs(durationMs)}</span>
+      <span className="text-th-3 text-[10px] w-7 tabular-nums">{fmtMs(durationMs)}</span>
     </div>
   );
 }
@@ -222,7 +222,7 @@ function VolumeSlider({
     <div className="flex items-center gap-1.5">
       <button
         onClick={handleMuteToggle}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors"
+        className="text-th-3 hover:text-th-hi transition-colors"
         title={local === 0 ? 'Unmute' : 'Mute'}
       >
         {local === 0
@@ -234,7 +234,7 @@ function VolumeSlider({
         onChange={(e) => setLocal(Number(e.target.value))}
         onPointerDown={() => { pointerDown.current = true; }}
         onPointerUp={() => { pointerDown.current = false; onChange(local); }}
-        className={`${sliderW} h-1 rounded-full appearance-none cursor-pointer bg-zinc-700 accent-zinc-300`}
+        className={`${sliderW} h-1 rounded-full appearance-none cursor-pointer bg-th-overlay accent-th-accent`}
       />
     </div>
   );
@@ -263,7 +263,7 @@ function DeviceBar({
           className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
             selectedId === dev.id
               ? 'bg-[#1DB954]/15 border-[#1DB954]/40 text-[#1DB954]'
-              : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+              : 'bg-th-elevated border-th-line text-th-2 hover:text-th-hi'
           }`}
         >
           <DeviceIcon type={dev.type} />
@@ -291,7 +291,7 @@ function PlaylistRow({
   const isLiked = playlist.id === 'liked-songs';
 
   return (
-    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-zinc-800 group transition-colors">
+    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-th-elevated group transition-colors">
       {/* Thumbnail — click opens track list */}
       <button onClick={onOpen} className="shrink-0 rounded overflow-hidden">
         {isLiked ? (
@@ -301,16 +301,16 @@ function PlaylistRow({
         ) : playlist.imageUrl ? (
           <img src={playlist.imageUrl} alt={playlist.name} className="w-10 h-10 object-cover" />
         ) : (
-          <div className="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center">
-            <Music size={14} className="text-zinc-500" />
+          <div className="w-10 h-10 rounded bg-th-overlay flex items-center justify-center">
+            <Music size={14} className="text-th-3" />
           </div>
         )}
       </button>
 
       {/* Name + count — click opens track list */}
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
-        <p className="text-xs text-zinc-200 truncate font-medium leading-tight">{playlist.name}</p>
-        <p className="text-[10px] text-zinc-500">
+        <p className="text-xs text-th-hi truncate font-medium leading-tight">{playlist.name}</p>
+        <p className="text-[10px] text-th-3">
           {playlist.trackCount >= 0 ? `${playlist.trackCount} tracks` : ''}
         </p>
       </button>
@@ -319,14 +319,14 @@ function PlaylistRow({
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onShuffle(); }}
-          className="p-1 rounded text-zinc-500 hover:text-[#1DB954] hover:bg-zinc-700 transition-colors"
+          className="p-1 rounded text-th-3 hover:text-[#1DB954] hover:bg-th-overlay transition-colors"
           title="Shuffle play"
         >
           <Shuffle size={11} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
-          className="p-1 rounded text-zinc-500 hover:text-[#1DB954] hover:bg-zinc-700 transition-colors"
+          className="p-1 rounded text-th-3 hover:text-[#1DB954] hover:bg-th-overlay transition-colors"
           title="Play"
         >
           <Play size={11} />
@@ -352,24 +352,24 @@ function TrackRow({
       onClick={onPlay}
       disabled={track.isLocal}
       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors group ${
-        track.isLocal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-800'
+        track.isLocal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-th-elevated'
       }`}
     >
-      <span className="text-zinc-600 text-[10px] w-5 text-right shrink-0 tabular-nums">{index + 1}</span>
+      <span className="text-th-ghost text-[10px] w-5 text-right shrink-0 tabular-nums">{index + 1}</span>
       {track.imageUrl ? (
         <img src={track.imageUrl} alt={track.trackName} className="w-7 h-7 rounded shrink-0 object-cover" />
       ) : (
-        <div className="w-7 h-7 rounded bg-zinc-800 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded bg-th-elevated flex items-center justify-center shrink-0">
           {track.type === 'episode'
-            ? <Mic2 size={10} className="text-zinc-600" />
-            : <Music size={10} className="text-zinc-600" />}
+            ? <Mic2 size={10} className="text-th-ghost" />
+            : <Music size={10} className="text-th-ghost" />}
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-zinc-200 truncate leading-tight">{track.trackName}</p>
-        <p className="text-[10px] text-zinc-500 truncate">{track.artistName}</p>
+        <p className="text-[11px] text-th-hi truncate leading-tight">{track.trackName}</p>
+        <p className="text-[10px] text-th-3 truncate">{track.artistName}</p>
       </div>
-      <span className="text-zinc-600 text-[10px] tabular-nums shrink-0">{fmtMs(track.durationMs)}</span>
+      <span className="text-th-ghost text-[10px] tabular-nums shrink-0">{fmtMs(track.durationMs)}</span>
     </button>
   );
 }
@@ -434,25 +434,25 @@ function PlaylistPanel({
       <div className="flex items-center gap-2 px-3 pt-2 pb-1.5 shrink-0">
         <button
           onClick={() => { if (showingTracks) setSelectedPlaylist(null); else onBack(); }}
-          className="text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="text-th-3 hover:text-th-hi transition-colors"
         >
           <ArrowLeft size={13} />
         </button>
-        <span className="text-zinc-400 text-xs font-medium truncate">
+        <span className="text-th-2 text-xs font-medium truncate">
           {showingTracks ? selectedPlaylist!.name : 'Your Playlists'}
         </span>
         {showingTracks && (
           <div className="ml-auto flex items-center gap-1 shrink-0">
             <button
               onClick={() => handlePlayContext(selectedPlaylist!, true)}
-              className="p-1 rounded text-zinc-500 hover:text-[#1DB954] hover:bg-zinc-700 transition-colors"
+              className="p-1 rounded text-th-3 hover:text-[#1DB954] hover:bg-th-overlay transition-colors"
               title="Shuffle play"
             >
               <Shuffle size={12} />
             </button>
             <button
               onClick={() => handlePlayContext(selectedPlaylist!, false)}
-              className="p-1 rounded text-zinc-500 hover:text-[#1DB954] hover:bg-zinc-700 transition-colors"
+              className="p-1 rounded text-th-3 hover:text-[#1DB954] hover:bg-th-overlay transition-colors"
               title="Play from beginning"
             >
               <Play size={12} />
@@ -475,7 +475,7 @@ function PlaylistPanel({
         {!showingTracks ? (
           <>
             {playlists.isLoading && (
-              <p className="text-zinc-600 text-xs text-center py-4">Loading…</p>
+              <p className="text-th-ghost text-xs text-center py-4">Loading…</p>
             )}
             {playlists.isError && (
               <p className="text-red-400/70 text-xs text-center py-4">Failed — re-auth if scopes changed</p>
@@ -491,13 +491,13 @@ function PlaylistPanel({
             ))}
             <div ref={playlistSentinel} className="h-2" />
             {playlists.isFetchingNextPage && (
-              <p className="text-zinc-600 text-[10px] text-center pb-1">Loading more…</p>
+              <p className="text-th-ghost text-[10px] text-center pb-1">Loading more…</p>
             )}
           </>
         ) : (
           <>
             {tracks.isLoading && (
-              <p className="text-zinc-600 text-xs text-center py-4">Loading tracks…</p>
+              <p className="text-th-ghost text-xs text-center py-4">Loading tracks…</p>
             )}
             {tracks.isError && (
               <p className="text-red-400/70 text-xs text-center py-4">Failed to load tracks</p>
@@ -512,7 +512,7 @@ function PlaylistPanel({
             ))}
             <div ref={trackSentinel} className="h-2" />
             {tracks.isFetchingNextPage && (
-              <p className="text-zinc-600 text-[10px] text-center pb-1">Loading more…</p>
+              <p className="text-th-ghost text-[10px] text-center pb-1">Loading more…</p>
             )}
           </>
         )}
@@ -568,7 +568,7 @@ function NowPlayingView({
   const handleSkipFwd = () => seek.mutate(Math.min(data.durationMs, localProgressRef.current + 15_000));
 
   const activeClass = (flag: boolean) =>
-    flag ? 'text-[#1DB954]' : 'text-zinc-500 hover:text-zinc-300';
+    flag ? 'text-[#1DB954]' : 'text-th-3 hover:text-th-hi';
 
   const isPodcast = data.type === 'episode';
 
@@ -594,11 +594,11 @@ function NowPlayingView({
   const actionIcons = (
     <div className="flex items-center gap-1 shrink-0">
       <button onClick={onOpenPlaylists}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5" title="Browse playlists">
+        className="text-th-3 hover:text-th-hi transition-colors p-0.5" title="Browse playlists">
         <ListMusic size={14} />
       </button>
       <button onClick={onOpenSearch}
-        className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5" title="Search">
+        className="text-th-3 hover:text-th-hi transition-colors p-0.5" title="Search">
         <Search size={13} />
       </button>
     </div>
@@ -613,27 +613,27 @@ function NowPlayingView({
       </button>
       <div className="flex items-center gap-3">
         <button onClick={handleRewind}
-          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Rewind 15s">
+          className="text-th-3 hover:text-th-hi transition-colors relative" title="Rewind 15s">
           <RotateCcw size={seekSz} />
           <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 ml-0.5">15</span>
         </button>
         <button onClick={() => previous.mutate()}
-          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Previous">
+          className="text-th-2 hover:text-th-hi transition-colors" title="Previous">
           <SkipBack size={skipSz} />
         </button>
         <button onClick={handlePlayPause}
-          className={`${playBtnCls} rounded-full bg-zinc-100 hover:bg-white text-zinc-900 flex items-center justify-center`}
+          className={`${playBtnCls} rounded-full bg-th-hi hover:bg-th-hi/80 text-th-bg flex items-center justify-center`}
           title={data.isPlaying ? 'Pause' : 'Play'}>
           {data.isPlaying
             ? <Pause size={playIconSz} fill="currentColor" />
             : <Play size={playIconSz} fill="currentColor" className="ml-0.5" />}
         </button>
         <button onClick={() => next.mutate()}
-          className="text-zinc-400 hover:text-zinc-100 transition-colors" title="Next">
+          className="text-th-2 hover:text-th-hi transition-colors" title="Next">
           <SkipForward size={skipSz} />
         </button>
         <button onClick={handleSkipFwd}
-          className="text-zinc-500 hover:text-zinc-300 transition-colors relative" title="Skip forward 15s">
+          className="text-th-3 hover:text-th-hi transition-colors relative" title="Skip forward 15s">
           <RotateCw size={seekSz} />
           <span className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-current mt-1.5 mr-0.5">15</span>
         </button>
@@ -666,10 +666,10 @@ function NowPlayingView({
           <div className="min-w-0 flex-1">
             <ScrollingText
               text={data.trackName || '—'}
-              className={`font-medium text-zinc-100 leading-tight ${size === 'xl' ? 'text-base' : 'text-sm'}`}
+              className={`font-medium text-th-hi leading-tight ${size === 'xl' ? 'text-base' : 'text-sm'}`}
             />
             <div className="mt-0.5">
-              <ScrollingText text={data.artistName} className="text-xs text-zinc-400" />
+              <ScrollingText text={data.artistName} className="text-xs text-th-2" />
             </div>
           </div>
           {actionIcons}
@@ -684,17 +684,17 @@ function NowPlayingView({
               className={`h-full ${artMaxH} aspect-square object-cover rounded-lg shadow-lg`}
             />
           ) : (
-            <div className={`h-full ${artMaxH} aspect-square rounded-lg bg-zinc-800 flex items-center justify-center`}>
+            <div className={`h-full ${artMaxH} aspect-square rounded-lg bg-th-elevated flex items-center justify-center`}>
               {isPodcast
-                ? <Mic2 size={size === 'xl' ? 48 : 32} className="text-zinc-600" />
-                : <Music size={size === 'xl' ? 48 : 32} className="text-zinc-600" />}
+                ? <Mic2 size={size === 'xl' ? 48 : 32} className="text-th-ghost" />
+                : <Music size={size === 'xl' ? 48 : 32} className="text-th-ghost" />}
             </div>
           )}
         </div>
 
         {/* Album / podcast label */}
         {!isPodcast && data.albumName && (
-          <p className="text-zinc-600 text-[10px] truncate text-center shrink-0 -mt-1">{data.albumName}</p>
+          <p className="text-th-ghost text-[10px] truncate text-center shrink-0 -mt-1">{data.albumName}</p>
         )}
         {isPodcast && (
           <p className="text-[10px] text-purple-400/70 text-center shrink-0 -mt-1">Podcast</p>
@@ -716,10 +716,10 @@ function NowPlayingView({
     <img src={data.albumArtUrl} alt={data.trackName}
       className={`${compactArtCls} rounded-md object-cover shrink-0`} />
   ) : (
-    <div className={`${compactArtCls} rounded-md bg-zinc-800 shrink-0 flex items-center justify-center`}>
+    <div className={`${compactArtCls} rounded-md bg-th-elevated shrink-0 flex items-center justify-center`}>
       {isPodcast
-        ? <Mic2 size={compactMusicSz} className="text-zinc-600" />
-        : <Music size={compactMusicSz} className="text-zinc-600" />}
+        ? <Mic2 size={compactMusicSz} className="text-th-ghost" />
+        : <Music size={compactMusicSz} className="text-th-ghost" />}
     </div>
   );
 
@@ -733,12 +733,12 @@ function NowPlayingView({
       <div className="flex gap-3 items-center min-w-0">
         {artEl}
         <div className="min-w-0 flex-1">
-          <ScrollingText text={data.trackName || '—'} className="text-zinc-100 text-sm font-medium leading-tight" />
+          <ScrollingText text={data.trackName || '—'} className="text-th-hi text-sm font-medium leading-tight" />
           <div className="mt-0.5">
-            <ScrollingText text={data.artistName} className="text-zinc-400 text-xs" />
+            <ScrollingText text={data.artistName} className="text-th-2 text-xs" />
           </div>
           {!isPodcast && data.albumName && (
-            <ScrollingText text={data.albumName} className="text-zinc-600 text-xs" />
+            <ScrollingText text={data.albumName} className="text-th-ghost text-xs" />
           )}
           {isPodcast && <p className="text-[10px] text-purple-400/70 mt-0.5">Podcast</p>}
         </div>
@@ -768,21 +768,21 @@ function NotPlayingView({
 }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3 p-6">
-      <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center">
-        <Music size={20} className="text-zinc-600" />
+      <div className="w-12 h-12 rounded-lg bg-th-elevated flex items-center justify-center">
+        <Music size={20} className="text-th-ghost" />
       </div>
-      <p className="text-zinc-500 text-xs">Nothing playing</p>
+      <p className="text-th-3 text-xs">Nothing playing</p>
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenPlaylists}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-th-elevated hover:bg-th-overlay text-th-hi text-xs transition-colors"
         >
           <ListMusic size={12} />
           Browse playlists
         </button>
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-th-elevated hover:bg-th-overlay text-th-hi text-xs transition-colors"
         >
           <Search size={12} />
           Search
@@ -801,8 +801,8 @@ function ConnectView({ onConnect }: { onConnect: () => void }) {
         <Music size={24} className="text-[#1DB954]" />
       </div>
       <div className="text-center">
-        <p className="text-zinc-200 font-medium text-sm">Spotify</p>
-        <p className="text-zinc-500 text-xs mt-1">Connect your account to see what's playing</p>
+        <p className="text-th-hi font-medium text-sm">Spotify</p>
+        <p className="text-th-3 text-xs mt-1">Connect your account to see what's playing</p>
       </div>
       <button
         onClick={onConnect}
@@ -881,15 +881,15 @@ export function SpotifyWidget() {
 
   if (status.isLoading) {
     return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex items-center justify-center">
-        <span className="text-zinc-600 text-xs">Connecting…</span>
+      <div className="rounded-lg border border-th-line bg-th-surface h-full flex items-center justify-center">
+        <span className="text-th-ghost text-xs">Connecting…</span>
       </div>
     );
   }
 
   if (!status.data?.authenticated) {
     return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 h-full">
+      <div className="rounded-lg border border-th-line bg-th-surface h-full">
         <ConnectView onConnect={handleConnect} />
       </div>
     );
@@ -902,7 +902,7 @@ export function SpotifyWidget() {
     <>
       <div
         ref={setContainerEl}
-        className="rounded-lg border border-zinc-800 bg-zinc-900 h-full flex flex-col overflow-hidden"
+        className="rounded-lg border border-th-line bg-th-surface h-full flex flex-col overflow-hidden"
       >
         <div className="flex-1 min-h-0 flex flex-col">
           {showPlaylists ? (

@@ -5,6 +5,111 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme variables ─────────────────────────────────────────────────────────
+   All values are raw RGB triples (no rgb() wrapper) so Tailwind's
+   opacity modifier syntax works: bg-th-surface/50, text-th-hi/80, etc.
+
+   Token roles:
+     --t-bg        deepest page background
+     --t-surface   widget shell / card background
+     --t-elevated  raised elements inside cards  (zinc-800 tier)
+     --t-overlay   deepest inner elements         (zinc-700 tier)
+     --t-line      border color
+     --t-hi        primary / high-contrast text
+     --t-2         secondary text
+     --t-3         tertiary / label text
+     --t-ghost     muted / placeholder text
+     --t-accent    interactive highlight / accent
+     --t-bar       titlebar background
+     --t-invert-bg / --t-invert-text   inverted pair for "today" pill etc.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Midnight (default dark — zinc) ─────────────────────────────────────── */
+:root,
+[data-theme="midnight"] {
+  --t-bg:          9   9  11;   /* zinc-950  */
+  --t-surface:    24  24  27;   /* zinc-900  */
+  --t-elevated:   39  39  42;   /* zinc-800  */
+  --t-overlay:    63  63  70;   /* zinc-700  */
+  --t-line:       39  39  42;   /* zinc-800  */
+  --t-hi:        255 255 255;
+  --t-2:         161 161 170;   /* zinc-400  */
+  --t-3:         113 113 122;   /* zinc-500  */
+  --t-ghost:      82  82  91;   /* zinc-600  */
+  --t-accent:     52 211 153;   /* emerald-400 */
+  --t-bar:         9   9  11;
+  --t-invert-bg:  244 244 245;  /* zinc-100  */
+  --t-invert-text: 24  24  27;  /* zinc-900  */
+}
+
+/* ── Slate (light) ───────────────────────────────────────────────────────── */
+[data-theme="slate"] {
+  --t-bg:        241 245 249;   /* slate-100 */
+  --t-surface:   255 255 255;   /* white     */
+  --t-elevated:  226 232 240;   /* slate-200 */
+  --t-overlay:   203 213 225;   /* slate-300 */
+  --t-line:      203 213 225;   /* slate-300 */
+  --t-hi:         15  23  42;   /* slate-900 */
+  --t-2:          71  85 105;   /* slate-600 */
+  --t-3:         100 116 139;   /* slate-500 */
+  --t-ghost:     148 163 184;   /* slate-400 */
+  --t-accent:    124  58 237;   /* violet-600 */
+  --t-bar:       248 250 252;   /* slate-50  */
+  --t-invert-bg:  15  23  42;   /* slate-900 */
+  --t-invert-text: 255 255 255;
+}
+
+/* ── Ocean (deep navy blue) ──────────────────────────────────────────────── */
+[data-theme="ocean"] {
+  --t-bg:          2  12  24;
+  --t-surface:     6  21  40;
+  --t-elevated:   10  36  62;
+  --t-overlay:    16  54  88;
+  --t-line:       10  36  62;
+  --t-hi:        224 242 254;   /* sky-50    */
+  --t-2:         186 230 253;   /* sky-200   */
+  --t-3:          71 148 180;
+  --t-ghost:      38  90 115;
+  --t-accent:     56 189 248;   /* sky-400   */
+  --t-bar:         1   8  16;
+  --t-invert-bg:  56 189 248;   /* sky-400   */
+  --t-invert-text:  2  12  24;
+}
+
+/* ── Contrast (pure black, high contrast) ────────────────────────────────── */
+[data-theme="contrast"] {
+  --t-bg:          0   0   0;
+  --t-surface:     8   8   8;
+  --t-elevated:   18  18  18;
+  --t-overlay:    32  32  32;
+  --t-line:       55  55  55;
+  --t-hi:        255 255 255;
+  --t-2:         210 210 210;
+  --t-3:         160 160 160;
+  --t-ghost:     100 100 100;
+  --t-accent:    250 204  21;   /* yellow-400 */
+  --t-bar:         0   0   0;
+  --t-invert-bg:  250 204  21;  /* yellow-400 */
+  --t-invert-text:  0   0   0;
+}
+
+/* ── Rose (warm rose / fuchsia dark) ─────────────────────────────────────── */
+[data-theme="rose"] {
+  --t-bg:         15   5  10;
+  --t-surface:    26  10  18;
+  --t-elevated:   42  16  32;
+  --t-overlay:    60  26  47;
+  --t-line:       42  16  32;
+  --t-hi:        255 228 242;
+  --t-2:         249 168 212;   /* rose-300  */
+  --t-3:         216 120 175;
+  --t-ghost:     140  70 108;
+  --t-accent:    240 171 252;   /* fuchsia-300 */
+  --t-bar:        10   3   7;
+  --t-invert-bg:  240 171 252;  /* fuchsia-300 */
+  --t-invert-text: 15   5  10;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -19,15 +124,15 @@ body,
   overflow: hidden;
 }
 
-/* Style the react-resizable handle to match dark theme */
+/* Style the react-resizable handle to use theme tokens */
 .react-resizable-handle {
   background-image: none;
   border: none;
 }
 
 .react-resizable-handle::after {
-  border-right: 2px solid theme('colors.zinc.600');
-  border-bottom: 2px solid theme('colors.zinc.600');
+  border-right:  2px solid rgb(var(--t-ghost));
+  border-bottom: 2px solid rgb(var(--t-ghost));
   border-radius: 0 0 2px 0;
   opacity: 0;
   transition: opacity 0.15s;
@@ -46,10 +151,10 @@ body,
   display: none;            /* Chrome / WebKit / Electron */
 }
 
-/* Remove default placeholder styling and use our own */
+/* Drag placeholder uses theme tokens */
 .react-grid-item.react-grid-placeholder {
-  background: theme('colors.zinc.800');
-  border: 1px dashed theme('colors.zinc.600');
+  background: rgb(var(--t-elevated));
+  border: 1px dashed rgb(var(--t-ghost));
   border-radius: 0.5rem;
   opacity: 0.5;
 }

@@ -28,12 +28,12 @@ function HomeScreen({ onSearch, height }: { onSearch: () => void; height: number
   if (compact) {
     return (
       <div className="flex items-center justify-center h-full gap-3">
-        <div className="text-zinc-700">
+        <div className="text-th-ghost">
           <YoutubeIcon size={iconH} />
         </div>
         <button
           onClick={onSearch}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-300 transition-colors text-[10px]"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-th-line hover:border-th-3 text-th-3 hover:text-th-hi transition-colors text-[10px]"
         >
           <Search size={10} />
           Search
@@ -44,15 +44,15 @@ function HomeScreen({ onSearch, height }: { onSearch: () => void; height: number
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-5">
-      <div className="flex items-center gap-2.5 text-zinc-700">
+      <div className="flex items-center gap-2.5 text-th-ghost">
         <YoutubeIcon size={iconH} />
-        <span className="font-semibold tracking-tight text-zinc-600" style={{ fontSize: textSize }}>
+        <span className="font-semibold tracking-tight text-th-ghost" style={{ fontSize: textSize }}>
           YouTube
         </span>
       </div>
       <button
         onClick={onSearch}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 transition-colors text-[11px]"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-th-line hover:border-th-3 hover:bg-th-elevated/50 text-th-3 hover:text-th-hi transition-colors text-[11px]"
       >
         <Search size={12} />
         Search videos
@@ -73,8 +73,8 @@ function SearchBar({
   onBack: () => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-zinc-800 shrink-0">
-      <button onClick={onBack} className="text-zinc-600 hover:text-zinc-400 transition-colors shrink-0">
+    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-th-line shrink-0">
+      <button onClick={onBack} className="text-th-ghost hover:text-th-2 transition-colors shrink-0">
         <ArrowLeft size={12} />
       </button>
       <input
@@ -83,18 +83,18 @@ function SearchBar({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
         placeholder="Search YouTube…"
-        className="flex-1 bg-transparent text-zinc-300 text-xs placeholder-zinc-600 outline-none"
+        className="flex-1 bg-transparent text-th-hi text-xs placeholder-zinc-600 outline-none"
         autoFocus
       />
       {value && (
-        <button onClick={() => onChange('')} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+        <button onClick={() => onChange('')} className="text-th-ghost hover:text-th-2 transition-colors">
           <X size={11} />
         </button>
       )}
       <button
         onClick={onSubmit}
         disabled={!value.trim() || loading}
-        className="text-zinc-500 hover:text-zinc-200 disabled:opacity-30 transition-colors"
+        className="text-th-3 hover:text-th-hi disabled:opacity-30 transition-colors"
       >
         <ChevronRight size={14} />
       </button>
@@ -108,17 +108,17 @@ function ResultRow({ video, onPlay }: { video: YoutubeVideo; onPlay: () => void 
   return (
     <button
       onClick={onPlay}
-      className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-zinc-800/60 transition-colors text-left"
+      className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-th-elevated/60 transition-colors text-left"
     >
       <img
         src={video.thumbnailUrl}
         alt={video.title}
-        className="w-16 h-9 object-cover rounded shrink-0 bg-zinc-800"
+        className="w-16 h-9 object-cover rounded shrink-0 bg-th-elevated"
         loading="lazy"
       />
       <div className="min-w-0 flex-1">
-        <p className="text-zinc-200 text-[11px] leading-snug line-clamp-2 font-medium">{video.title}</p>
-        <p className="text-zinc-500 text-[10px] mt-0.5 truncate">{video.channelTitle}</p>
+        <p className="text-th-hi text-[11px] leading-snug line-clamp-2 font-medium">{video.title}</p>
+        <p className="text-th-3 text-[10px] mt-0.5 truncate">{video.channelTitle}</p>
       </div>
     </button>
   );
@@ -198,12 +198,12 @@ export function YoutubeWidget() {
             <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
               {!submittedQuery && (
                 <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
-                  <Search size={18} className="text-zinc-700" />
-                  <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
+                  <Search size={18} className="text-th-ghost" />
+                  <p className="text-th-ghost text-xs text-center">Search for videos above</p>
                 </div>
               )}
               {submittedQuery && isFetching && !data && (
-                <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
+                <p className="text-th-ghost text-xs text-center py-6">Searching…</p>
               )}
               {isError && (
                 <p className="text-red-400/70 text-xs text-center py-6">
@@ -214,31 +214,31 @@ export function YoutubeWidget() {
                 <ResultRow key={video.videoId} video={video} onPlay={() => handlePlay(video)} />
               ))}
               {data?.items.length === 0 && (
-                <p className="text-zinc-600 text-xs text-center py-6">No results</p>
+                <p className="text-th-ghost text-xs text-center py-6">No results</p>
               )}
             </div>
           </>
         ) : (
           /* Control bar */
           <div
-            className="flex items-center gap-2 px-3 border-t border-zinc-800 shrink-0"
+            className="flex items-center gap-2 px-3 border-t border-th-line shrink-0"
             style={{ height: CONTROL_BAR_H }}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-zinc-300 text-[11px] font-medium truncate">{selectedVideo.title}</p>
-              <p className="text-zinc-600 text-[10px] truncate">{selectedVideo.channelTitle}</p>
+              <p className="text-th-hi text-[11px] font-medium truncate">{selectedVideo.title}</p>
+              <p className="text-th-ghost text-[10px] truncate">{selectedVideo.channelTitle}</p>
             </div>
             <button
               onClick={() => setView('search')}
               title="Search"
-              className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+              className="text-th-ghost hover:text-th-hi transition-colors shrink-0"
             >
               <Search size={13} />
             </button>
             <button
               onClick={goHome}
               title="Close video"
-              className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+              className="text-th-ghost hover:text-th-hi transition-colors shrink-0"
             >
               <X size={13} />
             </button>
@@ -270,12 +270,12 @@ export function YoutubeWidget() {
       <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0">
         {!submittedQuery && (
           <div className="flex flex-col items-center justify-center h-full gap-2 p-6">
-            <Search size={18} className="text-zinc-700" />
-            <p className="text-zinc-600 text-xs text-center">Search for videos above</p>
+            <Search size={18} className="text-th-ghost" />
+            <p className="text-th-ghost text-xs text-center">Search for videos above</p>
           </div>
         )}
         {submittedQuery && isFetching && !data && (
-          <p className="text-zinc-600 text-xs text-center py-6">Searching…</p>
+          <p className="text-th-ghost text-xs text-center py-6">Searching…</p>
         )}
         {isError && (
           <p className="text-red-400/70 text-xs text-center py-6">
@@ -286,7 +286,7 @@ export function YoutubeWidget() {
           <ResultRow key={video.videoId} video={video} onPlay={() => handlePlay(video)} />
         ))}
         {data?.items.length === 0 && (
-          <p className="text-zinc-600 text-xs text-center py-6">No results</p>
+          <p className="text-th-ghost text-xs text-center py-6">No results</p>
         )}
       </div>
     </div>
