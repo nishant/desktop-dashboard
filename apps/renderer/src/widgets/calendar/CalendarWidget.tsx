@@ -24,12 +24,12 @@ function MonthView({
 
   return (
     <div className="flex flex-col min-w-0 min-h-0">
-      <p className={`text-[11px] font-semibold text-center mb-1.5 shrink-0 ${isCurrent ? 'text-zinc-300' : 'text-zinc-500'}`}>
+      <p className={`text-[11px] font-semibold text-center mb-1.5 shrink-0 ${isCurrent ? 'text-th-hi' : 'text-th-3'}`}>
         {label} {year}
       </p>
       <div className="grid grid-cols-7 shrink-0 mb-0.5">
         {DOW.map((d) => (
-          <span key={d} className="text-center text-[9px] font-medium text-zinc-600 uppercase tracking-wide">
+          <span key={d} className="text-center text-[9px] font-medium text-th-ghost uppercase tracking-wide">
             {d}
           </span>
         ))}
@@ -42,8 +42,8 @@ function MonthView({
               key={i}
               className={`flex items-center justify-center text-[11px] h-6 rounded-full ${
                 d === null ? 'invisible' :
-                isToday ? 'bg-zinc-100 text-zinc-900 font-bold' :
-                'text-zinc-400'
+                isToday ? 'bg-th-invert-bg text-th-invert-text font-bold' :
+                'text-th-2'
               }`}
             >
               {d ?? ''}

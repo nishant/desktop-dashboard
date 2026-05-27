@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Pin, Layers } from 'lucide-react';
+import { LayoutGrid, Pin, Layers, Palette } from 'lucide-react';
 import { PRESETS, ALL_WIDGET_IDS, WIDGET_TITLES } from '../lib/layouts';
 import { useLayoutStore } from '../store/layoutStore';
+import { useThemeStore } from '../store/themeStore';
+import { THEMES } from '../themes';
 import { cn } from '../lib/utils';
 import type { WidgetId } from '../lib/layouts';
 
@@ -42,6 +44,17 @@ function Backdrop({ onClose }: { onClose: () => void }) {
   );
 }
 
+const menuBtn = (open: boolean) =>
+  cn(
+    'flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors',
+    open
+      ? 'bg-th-elevated text-th-hi'
+      : 'text-th-ghost hover:text-th-hi hover:bg-th-elevated/60',
+  );
+
+const menuPanel =
+  'absolute right-0 top-full mt-1 z-50 bg-th-surface border border-th-line rounded-lg shadow-xl py-1 min-w-[148px]';
+
 // ── Layouts menu ──────────────────────────────────────────────────────────────
 
 function LayoutsMenu() {
@@ -50,13 +63,7 @@ function LayoutsMenu() {
 
   return (
     <div className="relative" style={noDragStyle}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          'flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors',
-          open ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/60',
-        )}
-      >
+      <button onClick={() => setOpen((o) => !o)} className={menuBtn(open)}>
         <LayoutGrid size={11} />
         Layouts
       </button>
@@ -64,10 +71,7 @@ function LayoutsMenu() {
       {open && (
         <>
           <Backdrop onClose={() => setOpen(false)} />
-          <div
-            className="absolute right-0 top-full mt-1 z-50 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 min-w-[148px]"
-            style={noDragStyle}
-          >
+          <div className={menuPanel} style={noDragStyle}>
             {PRESETS.map((preset) => {
               const pinned = pinnedPresets.includes(preset.name);
               return (
@@ -77,8 +81,8 @@ function LayoutsMenu() {
                     className={cn(
                       'flex-1 text-left px-2 py-1 rounded text-[11px] transition-colors',
                       activePreset === preset.name
-                        ? 'text-zinc-100 bg-zinc-800'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60',
+                        ? 'text-th-hi bg-th-elevated'
+                        : 'text-th-2 hover:text-th-hi hover:bg-th-elevated/60',
                     )}
                   >
                     {preset.name}
@@ -89,8 +93,8 @@ function LayoutsMenu() {
                     className={cn(
                       'p-1 rounded transition-colors shrink-0',
                       pinned
-                        ? 'text-zinc-300 hover:text-red-400'
-                        : 'text-zinc-700 hover:text-zinc-400 opacity-0 group-hover:opacity-100',
+                        ? 'text-th-2 hover:text-red-400'
+                        : 'text-th-ghost hover:text-th-2 opacity-0 group-hover:opacity-100',
                     )}
                   >
                     <Pin size={10} className={pinned ? 'fill-current' : ''} />
@@ -113,13 +117,7 @@ function WidgetsMenu() {
 
   return (
     <div className="relative" style={noDragStyle}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          'flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors',
-          open ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/60',
-        )}
-      >
+      <button onClick={() => setOpen((o) => !o)} className={menuBtn(open)}>
         <Layers size={11} />
         Widgets
       </button>
@@ -127,17 +125,14 @@ function WidgetsMenu() {
       {open && (
         <>
           <Backdrop onClose={() => setOpen(false)} />
-          <div
-            className="absolute right-0 top-full mt-1 z-50 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 min-w-[148px]"
-            style={noDragStyle}
-          >
+          <div className={menuPanel} style={noDragStyle}>
             {ALL_WIDGET_IDS.map((id) => {
               const visible = visibleWidgets.includes(id);
               return (
                 <div key={id} className="flex items-center gap-1 px-1 group">
                   <span className={cn(
                     'flex-1 px-2 py-1 text-[11px]',
-                    visible ? 'text-zinc-300' : 'text-zinc-600',
+                    visible ? 'text-th-2' : 'text-th-ghost',
                   )}>
                     {WIDGET_TITLES[id as WidgetId]}
                   </span>
@@ -147,8 +142,8 @@ function WidgetsMenu() {
                     className={cn(
                       'p-1 rounded transition-colors shrink-0',
                       visible
-                        ? 'text-zinc-300 hover:text-red-400'
-                        : 'text-zinc-700 hover:text-zinc-400 opacity-0 group-hover:opacity-100',
+                        ? 'text-th-2 hover:text-red-400'
+                        : 'text-th-ghost hover:text-th-2 opacity-0 group-hover:opacity-100',
                     )}
                   >
                     <Pin size={10} className={visible ? 'fill-current' : ''} />
@@ -156,6 +151,52 @@ function WidgetsMenu() {
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Theme menu ────────────────────────────────────────────────────────────────
+
+function ThemeMenu() {
+  const { theme, setTheme } = useThemeStore();
+  const [open, setOpen] = useState(false);
+  const current = THEMES.find((t) => t.id === theme) ?? THEMES[0];
+
+  return (
+    <div className="relative" style={noDragStyle}>
+      <button onClick={() => setOpen((o) => !o)} className={menuBtn(open)}>
+        <Palette size={11} />
+        <span
+          className="h-2 w-2 rounded-full shrink-0 ring-1 ring-th-line"
+          style={{ background: current.swatch }}
+        />
+      </button>
+
+      {open && (
+        <>
+          <Backdrop onClose={() => setOpen(false)} />
+          <div className={menuPanel} style={noDragStyle}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => { setTheme(t.id); setOpen(false); }}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] transition-colors',
+                  theme === t.id
+                    ? 'text-th-hi bg-th-elevated'
+                    : 'text-th-2 hover:text-th-hi hover:bg-th-elevated/60',
+                )}
+              >
+                <span
+                  className="h-3 w-3 rounded-full shrink-0 ring-1 ring-white/10"
+                  style={{ background: t.swatch }}
+                />
+                {t.name}
+              </button>
+            ))}
           </div>
         </>
       )}
@@ -172,11 +213,11 @@ export function Titlebar() {
   return (
     <div
       style={dragStyle}
-      className="h-8 relative flex items-center px-3 bg-zinc-950 border-b border-zinc-800/50 shrink-0 select-none"
+      className="h-8 relative flex items-center px-3 bg-th-bar border-b border-th-line/50 shrink-0 select-none"
     >
       {/* Left: brand + pinned preset buttons */}
       <div className="flex items-center gap-1">
-        <span className="text-zinc-700 text-[11px] font-semibold tracking-[0.2em] uppercase shrink-0 mr-1.5">
+        <span className="text-th-ghost text-[11px] font-semibold tracking-[0.2em] uppercase shrink-0 mr-1.5">
           nishboard
         </span>
         <div style={noDragStyle} className="flex items-center gap-0.5">
@@ -187,8 +228,8 @@ export function Titlebar() {
               className={cn(
                 'px-2 py-0.5 rounded text-[11px] font-medium transition-colors',
                 activePreset === name
-                  ? 'bg-zinc-800 text-zinc-200'
-                  : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/60',
+                  ? 'bg-th-elevated text-th-hi'
+                  : 'text-th-ghost hover:text-th-hi hover:bg-th-elevated/60',
               )}
             >
               {name}
@@ -199,11 +240,12 @@ export function Titlebar() {
 
       {/* Center: clock — absolute so it's always perfectly centred */}
       <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
-        <span className="text-zinc-500 text-[11px] tabular-nums">{clock}</span>
+        <span className="text-th-3 text-[11px] tabular-nums">{clock}</span>
       </div>
 
-      {/* Right: widget + layout menus */}
+      {/* Right: theme + widget + layout menus */}
       <div className="ml-auto flex items-center gap-1">
+        <ThemeMenu />
         <WidgetsMenu />
         <LayoutsMenu />
       </div>

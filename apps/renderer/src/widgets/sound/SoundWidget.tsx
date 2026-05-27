@@ -43,7 +43,7 @@ function VolumeSlider({
         onChange(local);
       }}
       className="w-full h-1 rounded-full appearance-none cursor-pointer
-        bg-zinc-700 accent-zinc-300
+        bg-th-overlay accent-th-accent
         disabled:opacity-40 disabled:cursor-not-allowed"
     />
   );
@@ -65,14 +65,14 @@ function DeviceItem({
       className={[
         'w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2',
         device.isDefault
-          ? 'bg-zinc-700/50 text-white cursor-default'
-          : 'text-zinc-400 hover:bg-zinc-800 hover:text-white',
+          ? 'bg-th-overlay/50 text-th-hi cursor-default'
+          : 'text-th-2 hover:bg-th-elevated hover:text-th-hi',
       ].join(' ')}
     >
       <span
         className={[
           'h-1.5 w-1.5 rounded-full shrink-0',
-          device.isDefault ? 'bg-emerald-400' : 'bg-zinc-600',
+          device.isDefault ? 'bg-emerald-400' : 'bg-th-ghost',
         ].join(' ')}
       />
       <span className="truncate">{device.name}</span>
@@ -90,7 +90,7 @@ function SessionRow({ session, onCommit }: { session: AudioSession; onCommit: (p
 
   return (
     <div className="flex items-center gap-2 group">
-      <span className="text-zinc-400 text-[11px] truncate w-28 shrink-0 group-hover:text-zinc-200 transition-colors">
+      <span className="text-th-2 text-[11px] truncate w-28 shrink-0 group-hover:text-th-hi transition-colors">
         {session.name}
       </span>
       <input
@@ -104,9 +104,9 @@ function SessionRow({ session, onCommit }: { session: AudioSession; onCommit: (p
           pointerDown.current = false;
           onCommit(session.pid, local);
         }}
-        className="flex-1 h-1 rounded-full appearance-none cursor-pointer bg-zinc-700 accent-zinc-400"
+        className="flex-1 h-1 rounded-full appearance-none cursor-pointer bg-th-overlay accent-th-accent"
       />
-      <span className="text-zinc-500 text-[10px] tabular-nums font-mono w-7 text-right shrink-0">
+      <span className="text-th-3 text-[10px] tabular-nums font-mono w-7 text-right shrink-0">
         {local}%
       </span>
     </div>
@@ -125,7 +125,7 @@ export function SoundWidget() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+      <div className="h-full flex items-center justify-center text-th-3 text-sm">
         Loading…
       </div>
     );
@@ -149,13 +149,13 @@ export function SoundWidget() {
             onClick={() => setMute.mutate(!muted)}
             className={[
               'flex items-center gap-1.5 text-xs font-medium transition-colors',
-              muted ? 'text-red-400 hover:text-red-300' : 'text-zinc-300 hover:text-white',
+              muted ? 'text-red-400 hover:text-red-300' : 'text-th-hi hover:text-th-hi',
             ].join(' ')}
           >
             <VolumeIcon vol={vol} muted={muted} />
             Volume
           </button>
-          <span className="text-[11px] tabular-nums text-zinc-500 font-mono">
+          <span className="text-[11px] tabular-nums text-th-3 font-mono">
             {muted ? 'muted' : `${vol}%`}
           </span>
         </div>
@@ -169,7 +169,7 @@ export function SoundWidget() {
       {/* ── Output device ── */}
       {data.devices.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-600 px-0.5">Output</span>
+          <span className="text-[10px] uppercase tracking-wider text-th-ghost px-0.5">Output</span>
           {data.devices.map((d) => (
             <DeviceItem
               key={d.id}
@@ -184,7 +184,7 @@ export function SoundWidget() {
       {/* ── App mixer (Windows only) ── */}
       {data.sessions.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-600 px-0.5">
+          <span className="text-[10px] uppercase tracking-wider text-th-ghost px-0.5">
             App Mixer
           </span>
           {data.sessions.map((s) => (

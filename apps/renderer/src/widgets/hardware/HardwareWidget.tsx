@@ -21,7 +21,7 @@ function fmtUptime(s: number): string {
 }
 
 function tempColor(c: number | null): string {
-  if (c === null) return 'text-zinc-500';
+  if (c === null) return 'text-th-3';
   if (c >= 85) return 'text-red-400';
   if (c >= 70) return 'text-amber-400';
   return 'text-emerald-400';
@@ -54,7 +54,7 @@ function Spark({ data, color }: { data: number[]; color: string }) {
 
 function UsageBar({ pct, color }: { pct: number; color: string }) {
   return (
-    <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+    <div className="w-full h-2 rounded-full bg-th-elevated overflow-hidden">
       <div
         className="h-full rounded-full transition-all duration-300"
         style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }}
@@ -71,7 +71,7 @@ function CoreGrid({ coreUsage }: { coreUsage: number[] }) {
     <div className="flex flex-wrap gap-0.5 mt-1.5">
       {coreUsage.map((load, i) => (
         <div key={i} className="flex flex-col items-center" style={{ width: 10 }}>
-          <div className="w-2.5 bg-zinc-800 rounded-sm overflow-hidden" style={{ height: 20 }}>
+          <div className="w-2.5 bg-th-elevated rounded-sm overflow-hidden" style={{ height: 20 }}>
             <div
               className="w-full rounded-sm"
               style={{
@@ -90,7 +90,7 @@ function CoreGrid({ coreUsage }: { coreUsage: number[] }) {
 // ── Section card ──────────────────────────────────────────────────────────
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="bg-zinc-800/50 rounded-lg p-3">{children}</div>;
+  return <div className="bg-th-elevated/50 rounded-lg p-3">{children}</div>;
 }
 
 // ── CPU card ─────────────────────────────────────────────────────────────
@@ -101,13 +101,13 @@ function CpuCard({ cpu, history, view }: { cpu: HardwareData['cpu']; history: Ha
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <Cpu size={12} className="text-blue-400" />
-          <span className="text-xs text-zinc-400 font-medium truncate max-w-[160px]">{cpu.brand}</span>
+          <span className="text-xs text-th-2 font-medium truncate max-w-[160px]">{cpu.brand}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {cpu.tempCelsius !== null && (
             <span className={`text-xs font-mono ${tempColor(cpu.tempCelsius)}`}>{cpu.tempCelsius}°C</span>
           )}
-          <span className="text-sm font-semibold text-white tabular-nums">{cpu.usagePercent}%</span>
+          <span className="text-sm font-semibold text-th-hi tabular-nums">{cpu.usagePercent}%</span>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ function CpuCard({ cpu, history, view }: { cpu: HardwareData['cpu']; history: Ha
       )}
 
       <div className="mt-1.5">
-        <span className="text-[10px] text-zinc-500">
+        <span className="text-[10px] text-th-3">
           {cpu.physicalCores}C/{cpu.cores}T · {fmt(cpu.speedGhz)} GHz
         </span>
       </div>
@@ -135,7 +135,7 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
     return (
       <Card>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-zinc-500">No GPU detected</span>
+          <span className="text-xs text-th-3">No GPU detected</span>
         </div>
       </Card>
     );
@@ -146,12 +146,12 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
   return (
     <Card>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs text-zinc-400 font-medium truncate max-w-[160px]">{gpu.name}</span>
+        <span className="text-xs text-th-2 font-medium truncate max-w-[160px]">{gpu.name}</span>
         <div className="flex items-center gap-2 shrink-0">
           {gpu.tempCelsius !== null && (
             <span className={`text-xs font-mono ${tempColor(gpu.tempCelsius)}`}>{gpu.tempCelsius}°C</span>
           )}
-          <span className="text-sm font-semibold text-white tabular-nums">{gpu.usagePercent}%</span>
+          <span className="text-sm font-semibold text-th-hi tabular-nums">{gpu.usagePercent}%</span>
         </div>
       </div>
 
@@ -163,7 +163,7 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
 
       {gpu.vramTotalMb > 0 && (
         <div className="mt-2 space-y-1">
-          <div className="flex justify-between text-[10px] text-zinc-500">
+          <div className="flex justify-between text-[10px] text-th-3">
             <span>VRAM</span>
             <span>{fmt(gpu.vramUsedMb / 1024)} / {fmt(gpu.vramTotalMb / 1024)} GB · {vramPct}%</span>
           </div>
@@ -173,7 +173,7 @@ function GpuCard({ gpu, history, view }: { gpu: HardwareData['gpu']; history: Ha
 
       {gpu.clockMhz !== null && (
         <div className="mt-1">
-          <span className="text-[10px] text-zinc-500">{gpu.clockMhz} MHz</span>
+          <span className="text-[10px] text-th-3">{gpu.clockMhz} MHz</span>
         </div>
       )}
     </Card>
@@ -189,10 +189,10 @@ function RamCard({ ram, history, view }: { ram: HardwareData['ram']; history: Ha
   return (
     <Card>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs text-zinc-400 font-medium">RAM</span>
+        <span className="text-xs text-th-2 font-medium">RAM</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-500 tabular-nums">{fmt(usedGb)} / {fmt(totalGb, 0)} GB</span>
-          <span className="text-sm font-semibold text-white tabular-nums">{ram.usagePercent}%</span>
+          <span className="text-[10px] text-th-3 tabular-nums">{fmt(usedGb)} / {fmt(totalGb, 0)} GB</span>
+          <span className="text-sm font-semibold text-th-hi tabular-nums">{ram.usagePercent}%</span>
         </div>
       </div>
 
@@ -204,7 +204,7 @@ function RamCard({ ram, history, view }: { ram: HardwareData['ram']; history: Ha
 
       {ram.swapTotalMb > 0 && (
         <div className="mt-2 space-y-1">
-          <div className="flex justify-between text-[10px] text-zinc-500">
+          <div className="flex justify-between text-[10px] text-th-3">
             <span>Swap</span>
             <span>{fmt(ram.swapUsedMb / 1024)} / {fmt(ram.swapTotalMb / 1024)} GB</span>
           </div>
@@ -230,7 +230,7 @@ function DiskCard({ disks, diskUsage, history, view }: {
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <HardDrive size={12} className="text-orange-400" />
-          <span className="text-xs text-zinc-400 font-medium">Disk I/O</span>
+          <span className="text-xs text-th-2 font-medium">Disk I/O</span>
         </div>
         <div className="flex gap-3 text-[10px] tabular-nums">
           <span className="text-emerald-400">R {fmt(d.readMBs)} MB/s</span>
@@ -249,7 +249,7 @@ function DiskCard({ disks, diskUsage, history, view }: {
         <div className="mt-2 space-y-1.5">
           {diskUsage.map((du) => (
             <div key={du.mount}>
-              <div className="flex justify-between text-[10px] text-zinc-500 mb-0.5">
+              <div className="flex justify-between text-[10px] text-th-3 mb-0.5">
                 <span className="font-mono">{du.mount}</span>
                 <span>{fmt(du.usedGb, 0)} / {fmt(du.totalGb, 0)} GB · {du.usePercent}%</span>
               </div>
@@ -277,7 +277,7 @@ function NetworkCard({ network, history, view }: {
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <Wifi size={12} className="text-sky-400" />
-          <span className="text-xs text-zinc-400 font-medium">Network</span>
+          <span className="text-xs text-th-2 font-medium">Network</span>
         </div>
         <div className="flex gap-3 text-[10px] tabular-nums">
           <span className="text-sky-400">↑ {fmt(totalUp)} Mbps</span>
@@ -295,13 +295,13 @@ function NetworkCard({ network, history, view }: {
       {network.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
           {network.map((n) => (
-            <span key={n.iface} className="text-[10px] text-zinc-500 font-mono">{n.iface}</span>
+            <span key={n.iface} className="text-[10px] text-th-3 font-mono">{n.iface}</span>
           ))}
         </div>
       )}
 
       {network.length === 0 && (
-        <span className="text-[10px] text-zinc-600">No active interfaces</span>
+        <span className="text-[10px] text-th-ghost">No active interfaces</span>
       )}
     </Card>
   );
@@ -319,7 +319,7 @@ function BatteryCard({ battery }: { battery: NonNullable<HardwareData['battery']
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <Icon size={12} className={textColor} />
-          <span className="text-xs text-zinc-400">Battery</span>
+          <span className="text-xs text-th-2">Battery</span>
           {battery.charging && <span className="text-[10px] text-emerald-400">Charging</span>}
         </div>
         <span className={`text-sm font-semibold tabular-nums ${textColor}`}>{battery.percent}%</span>
@@ -334,7 +334,7 @@ function BatteryCard({ battery }: { battery: NonNullable<HardwareData['battery']
 function NoBatteryCard() {
   return (
     <Card>
-      <span className="text-xs text-zinc-500">No battery</span>
+      <span className="text-xs text-th-3">No battery</span>
     </Card>
   );
 }
@@ -359,8 +359,8 @@ function ConfigPanel({
 }) {
   const sections = Object.keys(SECTION_LABELS) as HardwareSection[];
   return (
-    <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
-      <p className="text-[10px] text-zinc-500 mb-2 uppercase tracking-wide">Visible sections</p>
+    <div className="bg-th-elevated rounded-lg p-3 border border-th-line">
+      <p className="text-[10px] text-th-3 mb-2 uppercase tracking-wide">Visible sections</p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         {sections.map((section) => (
           <label key={section} className="flex items-center gap-2 cursor-pointer group">
@@ -368,19 +368,19 @@ function ConfigPanel({
               onClick={() => setVisible(section, !visible[section])}
               className={`w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
                 visible[section]
-                  ? 'bg-zinc-300 border-zinc-300'
-                  : 'bg-transparent border-zinc-600 group-hover:border-zinc-400'
+                  ? 'bg-th-hi border-th-hi'
+                  : 'bg-transparent border-th-ghost group-hover:border-th-3'
               }`}
             >
               {visible[section] && (
                 <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path d="M1 4l2.5 2.5L9 1" stroke="#18181b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1 4l2.5 2.5L9 1" stroke="rgb(var(--t-bg))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
             </div>
             <span
               onClick={() => setVisible(section, !visible[section])}
-              className="text-xs text-zinc-400 select-none"
+              className="text-xs text-th-2 select-none"
             >
               {SECTION_LABELS[section]}
             </span>
@@ -443,15 +443,15 @@ export function HardwareWidget() {
 
   if (query.isLoading) {
     return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 flex items-center justify-center h-full">
-        <span className="text-zinc-500 text-sm">Loading hardware…</span>
+      <div className="rounded-lg border border-th-line bg-th-surface p-4 flex items-center justify-center h-full">
+        <span className="text-th-3 text-sm">Loading hardware…</span>
       </div>
     );
   }
 
   if (query.isError || !query.data) {
     return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 flex items-center justify-center h-full">
+      <div className="rounded-lg border border-th-line bg-th-surface p-4 flex items-center justify-center h-full">
         <span className="text-red-400 text-sm">Failed to load hardware data</span>
       </div>
     );
@@ -460,19 +460,19 @@ export function HardwareWidget() {
   const d = query.data;
 
   return (
-    <div ref={setScrollEl} className="rounded-lg border border-zinc-800 bg-zinc-900 p-3 flex flex-col gap-2 h-full overflow-y-auto scrollbar-none">
+    <div ref={setScrollEl} className="rounded-lg border border-th-line bg-th-surface p-3 flex flex-col gap-2 h-full overflow-y-auto scrollbar-none">
       {/* Header */}
       <div className="flex items-center justify-between px-0.5 shrink-0">
         <div className="flex items-center gap-1.5">
-          <Cpu size={14} className="text-zinc-400" />
-          <span className="text-sm font-semibold text-zinc-200">Hardware</span>
+          <Cpu size={14} className="text-th-2" />
+          <span className="text-sm font-semibold text-th-hi">Hardware</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1 bg-zinc-800 rounded-md p-0.5">
+          <div className="flex items-center gap-1 bg-th-elevated rounded-md p-0.5">
             <button
               onClick={() => setView('sparks')}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
-                view === 'sparks' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                view === 'sparks' ? 'bg-th-overlay text-th-hi' : 'text-th-3 hover:text-th-hi'
               }`}
             >
               <Activity size={10} />
@@ -481,7 +481,7 @@ export function HardwareWidget() {
             <button
               onClick={() => setView('bars')}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
-                view === 'bars' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                view === 'bars' ? 'bg-th-overlay text-th-hi' : 'text-th-3 hover:text-th-hi'
               }`}
             >
               <BarChart2 size={10} />
@@ -491,7 +491,7 @@ export function HardwareWidget() {
           <button
             onClick={() => setConfigOpen((o) => !o)}
             className={`p-1 rounded transition-colors ${
-              configOpen ? 'text-zinc-200 bg-zinc-700' : 'text-zinc-500 hover:text-zinc-300'
+              configOpen ? 'text-th-hi bg-th-overlay' : 'text-th-3 hover:text-th-hi'
             }`}
           >
             <Settings size={13} />
@@ -513,10 +513,10 @@ export function HardwareWidget() {
       {/* Footer */}
       <div className="flex items-center justify-between px-0.5 shrink-0 mt-auto pt-1">
         <div className="flex items-center gap-1">
-          <Thermometer size={10} className="text-zinc-600" />
-          <span className="text-[10px] text-zinc-600">Uptime {fmtUptime(d.uptime)}</span>
+          <Thermometer size={10} className="text-th-ghost" />
+          <span className="text-[10px] text-th-ghost">Uptime {fmtUptime(d.uptime)}</span>
         </div>
-        {query.isFetching && <Loader2 size={10} className="text-zinc-700 animate-spin" />}
+        {query.isFetching && <Loader2 size={10} className="text-th-ghost animate-spin" />}
       </div>
     </div>
   );

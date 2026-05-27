@@ -4,6 +4,30 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #24] feat: theming system — 5 themes, ThemeMenu
+**Branch:** `feat/theming` → `master`
+**Date:** 2026-05-27
+
+### Added
+- **`tailwind.config.ts`** — 13 semantic color tokens backed by CSS custom properties: `th-bg`, `th-surface`, `th-elevated`, `th-overlay`, `th-line`, `th-hi`, `th-2`, `th-3`, `th-ghost`, `th-accent`, `th-bar`, `th-invert-bg`, `th-invert-text`. All support Tailwind opacity modifiers (`bg-th-surface/50`, etc.) via the `rgb(var(--t-*) / <alpha-value>)` pattern.
+- **`src/themes.ts`** — `ThemeId` union + `THEMES` array with name, id, and swatch hex for 5 themes.
+- **`src/store/themeStore.ts`** — Zustand persist store; default `'midnight'`.
+- **`src/index.css`** — CSS custom property blocks for all 5 themes via `[data-theme="..."]` selectors. Also updated `react-resizable-handle` and `react-grid-placeholder` styles to use theme tokens.
+- **5 themes:**
+  - **Midnight** — deep zinc dark (default, matches the original look)
+  - **Slate** — clean light mode on slate-100/white surfaces, violet accent
+  - **Ocean** — deep navy blue, sky-50 text, sky-400 accent
+  - **Contrast** — pure black, maximum contrast, yellow-400 accent (WCAG-oriented)
+  - **Rose** — warm rose/fuchsia dark, fuchsia-300 accent
+
+### Changed
+- **`src/App.tsx`** — applies `data-theme={theme}` to root div; root bg is now `bg-th-bg`.
+- **`src/components/Titlebar.tsx`** — added `ThemeMenu` (palette icon + color swatch + dropdown), positioned left of Widgets menu. All colors updated to `th-*` tokens.
+- **`src/components/WidgetShell.tsx`** — all `zinc-*` classes replaced with `th-*` tokens.
+- **All 8 widget files** — wholistic `zinc-*` → `th-*` token replacement across backgrounds, borders, text, accents, sliders, and interactive states. Semantic data colors (emerald/red/amber for charts and stock movement) intentionally untouched.
+
+---
+
 ## [PR #23] feat: dynamic BSP layouts + general UI polish
 **Branch:** `feature/general-fixes` → `master`
 **Date:** 2026-05-26
