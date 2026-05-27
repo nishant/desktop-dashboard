@@ -1,8 +1,40 @@
-import { useState, useRef, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { TrendingUp, TrendingDown, Pencil, X, Plus } from 'lucide-react';
 import { useStocks } from './useStocks';
 import { useStocksStore } from '../../store/stocksStore';
 import type { StockQuote } from '@dash/shared';
+
+// ── Market session ────────────────────────────────────────────────────────────
+
+type MarketSession = 'open' | 'after-hours' | 'pre-market' | 'closed';
+
+function getMarketSession(): MarketSession {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(new Date());
+  const day = parts.find((p) => p.type === 'weekday')?.value ?? '';
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+  const min = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+  const total = hour * 60 + min;
+  if (day === 'Sat' || day === 'Sun') return 'closed';
+  if (total >= 9 * 60 + 30 && total < 16 * 60) return 'open';
+  if (total >= 16 * 60 && total < 20 * 60) return 'after-hours';
+  if (total >= 4 * 60 && total < 9 * 60 + 30) return 'pre-market';
+  return 'closed';
+}
+
+function useMarketSession(): MarketSession {
+  const [session, setSession] = useState<MarketSession>(getMarketSession);
+  useEffect(() => {
+    const id = setInterval(() => setSession(getMarketSession()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return session;
+}
 
 function fmt(n: number, decimals = 2): string {
   return n.toLocaleString('en-US', {
@@ -127,22 +159,29 @@ function WatchlistModal({ onClose }: { onClose: () => void }) {
 export function StocksWidget() {
   const { data, isLoading, isError } = useStocks();
   const [editing, setEditing] = useState(false);
-  const anyOpen = data?.equities.some((q) => q.marketOpen) ?? false;
+  const session = useMarketSession();
+
+  const sessionDot: Record<MarketSession, string> = {
+    open:         'bg-emerald-400 animate-pulse',
+    'after-hours': 'bg-amber-400 animate-pulse',
+    'pre-market':  'bg-amber-400 animate-pulse',
+    closed:       'bg-red-500',
+  };
+  const sessionLabel: Record<MarketSession, string> = {
+    open:         'Market Open',
+    'after-hours': 'After Hours',
+    'pre-market':  'Pre-Market',
+    closed:       'Market Closed · Last close',
+  };
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
       {editing && <WatchlistModal onClose={() => setEditing(false)} />}
 
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800 shrink-0">
-        <span className="text-[10px] text-zinc-500 flex items-center gap-1.5">
-          {anyOpen ? (
-            <>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-              Market Open
-            </>
-          ) : (
-            <span className="text-zinc-600">Market Closed · close prices</span>
-          )}
+        <span className={`text-[10px] flex items-center gap-1.5 ${session === 'closed' ? 'text-zinc-600' : 'text-zinc-500'}`}>
+          <span className={`h-1.5 w-1.5 rounded-full inline-block shrink-0 ${sessionDot[session]}`} />
+          {sessionLabel[session]}
         </span>
         <button
           onClick={() => setEditing(true)}

@@ -6,6 +6,16 @@ export const ALL_WIDGET_IDS: WidgetId[] = [
   'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube',
 ];
 
+export const WIDGET_TITLES: Record<WidgetId, string> = {
+  weather: 'Weather',
+  spotify: 'Spotify',
+  stocks: 'Stocks',
+  hardware: 'Hardware',
+  sound: 'Sound',
+  calendar: 'Calendar',
+  youtube: 'YouTube',
+};
+
 export interface NamedLayout {
   name: string;
   layout: Layout[];

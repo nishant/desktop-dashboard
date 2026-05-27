@@ -11,22 +11,13 @@ import { SoundWidget } from '../widgets/sound/SoundWidget';
 import { CalendarWidget } from '../widgets/calendar/CalendarWidget';
 import { YoutubeWidget } from '../widgets/youtube/YoutubeWidget';
 import { TITLEBAR_H } from './Titlebar';
+import { WIDGET_TITLES } from '../lib/layouts';
 import type { WidgetId } from '../lib/layouts';
 
 const GridLayout = WidthProvider(ReactGridLayout);
 
 const MARGIN = 8;
 const PADDING = 8;
-
-const WIDGET_TITLES: Record<WidgetId, string> = {
-  weather: 'Weather',
-  spotify: 'Spotify',
-  stocks: 'Stocks',
-  hardware: 'Hardware',
-  sound: 'Sound',
-  calendar: 'Calendar',
-  youtube: 'YouTube',
-};
 
 const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
   weather: <WeatherWidget />,
@@ -58,24 +49,38 @@ function useRowHeight(layout: Layout[]): number {
 }
 
 export function DashboardGrid() {
-  const { layout, setLayout } = useLayoutStore();
-  const rowHeight = useRowHeight(layout);
+  const { layout, setLayout, visibleWidgets } = useLayoutStore();
+
+  // Only pass visible items to the grid; hidden items stay in `layout` with
+  // their positions intact so they snap back when re-enabled.
+  const visibleLayout = useMemo(
+    () => layout.filter((item) => visibleWidgets.includes(item.i as WidgetId)),
+    [layout, visibleWidgets],
+  );
+
+  const rowHeight = useRowHeight(visibleLayout);
 
   return (
     <GridLayout
-      layout={layout}
+      layout={visibleLayout}
       cols={24}
       rowHeight={rowHeight}
       margin={[MARGIN, MARGIN]}
       containerPadding={[PADDING, PADDING]}
       draggableHandle=".widget-drag-handle"
-      onLayoutChange={setLayout}
+      onLayoutChange={(newVisible) => {
+        // Merge incoming positions with stored positions of hidden widgets so
+        // drag/resize doesn't wipe out hidden-widget position state.
+        const visibleIds = new Set(newVisible.map((i) => i.i));
+        const hiddenItems = layout.filter((i) => !visibleIds.has(i.i));
+        setLayout([...newVisible, ...hiddenItems]);
+      }}
       compactType="vertical"
       isResizable
       isDraggable
       resizeHandles={['se', 'sw', 'ne', 'nw', 'e', 'w', 's', 'n']}
     >
-      {layout.map((item) => {
+      {visibleLayout.map((item) => {
         const id = item.i as WidgetId;
         return (
           <div key={id}>

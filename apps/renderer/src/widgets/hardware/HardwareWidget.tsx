@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Cpu, Thermometer, HardDrive, Wifi, Battery, BatteryCharging, BarChart2, Activity, Settings } from 'lucide-react';
+import { Cpu, Thermometer, HardDrive, Wifi, Battery, BatteryCharging, BarChart2, Activity, Settings, Loader2 } from 'lucide-react';
 import { useHardware, type HardwareHistory } from './useHardware';
 import { useHardwareStore, type HardwareSection } from '../../store/hardwareStore';
 import type { HardwareData } from '@dash/shared';
@@ -516,7 +516,7 @@ export function HardwareWidget() {
           <Thermometer size={10} className="text-zinc-600" />
           <span className="text-[10px] text-zinc-600">Uptime {fmtUptime(d.uptime)}</span>
         </div>
-        {query.isFetching && <span className="text-[10px] text-zinc-700">updating…</span>}
+        {query.isFetching && <Loader2 size={10} className="text-zinc-700 animate-spin" />}
       </div>
     </div>
   );
