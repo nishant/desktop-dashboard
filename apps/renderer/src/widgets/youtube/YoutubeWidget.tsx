@@ -21,8 +21,8 @@ function YoutubeIcon({ size }: { size: number }) {
 // ── Home screen ───────────────────────────────────────────────────────────────
 
 function HomeScreen({ onSearch, height }: { onSearch: () => void; height: number }) {
-  const iconH = Math.max(20, Math.min(52, Math.round(height * 0.14)));
-  const textSize = Math.max(12, Math.min(32, Math.round(iconH * 0.85)));
+  const iconH = Math.max(14, Math.min(28, Math.round(height * 0.08)));
+  const textSize = Math.max(10, Math.min(20, Math.round(iconH * 0.85)));
   const compact = height < 120;
 
   if (compact) {

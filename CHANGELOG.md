@@ -4,6 +4,33 @@ All changes organized by pull request, newest first.
 
 ---
 
+## [PR #23] feat: dynamic BSP layouts + general UI polish
+**Branch:** `feature/general-fixes` → `master`
+**Date:** 2026-05-26
+
+### Added
+- **`layouts.ts`** — Binary Space Partition (BSP) layout engine.
+  - `SplitNode` discriminated union (`leaf | v-split | h-split`) with helper constructors `l / v / h`.
+  - `PRESET_TREES` — each of the 8 named presets encoded as a BSP tree, verified column-by-column against the static layouts.
+  - `pruneTree(node, visible)` — removes hidden widget leaves; surviving sibling automatically expands to fill the full parent region (gap-free at any widget count).
+  - `renderTree(node, x, y, w, h)` — walks pruned tree, computing exact `Layout[]` coords using proportional splits rounded to integer grid units.
+  - `generateLayout(presetName, visibleIds)` — public API: returns a gap-free `Layout[]` for any subset of widgets, or `null` if preset unknown / all hidden.
+
+### Changed
+- **`layoutStore.ts`** — layout regeneration wired to all visibility-changing actions.
+  - `applyPreset` — calls `generateLayout(name, visibleWidgets)` so clicking a preset immediately produces a correct layout for however many widgets are currently visible. Falls back to static `autoFillLayout` if BSP returns null.
+  - `hideWidget` — if a preset is active, rerenders the remaining widgets gap-free via `generateLayout`.
+  - `showWidget` — if a preset is active, rerenders all visible widgets (including newly added) via `generateLayout`. In custom-layout mode (no active preset), ensures the re-shown widget has a grid slot via `autoFillLayout` fallback (prevents widgets silently disappearing after a hide → drag → show sequence).
+  - `resetToDefault` — uses `generateLayout` instead of static layout.
+
+### Notes
+- Static `PRESETS[]` array is retained as a fallback and source of truth for BSP tree ratios.
+- Titlebar: Layouts / Widgets dropdown menus, pinned preset quick-access buttons, centered clock (ET).
+- Stocks widget: market session status dot (green open / amber after-hours+pre-market / red closed), time-based ET detection updated every 60s.
+- Hardware widget: defaults to sparks view; polling spinner replaces "updating…" text.
+
+---
+
 ## [PR #22] feat: youtube widget UX polish
 **Branch:** `feat/youtube-widget` → `master`
 **Date:** 2026-05-26

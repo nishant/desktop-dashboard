@@ -6,6 +6,16 @@ export const ALL_WIDGET_IDS: WidgetId[] = [
   'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube',
 ];
 
+export const WIDGET_TITLES: Record<WidgetId, string> = {
+  weather: 'Weather',
+  spotify: 'Spotify',
+  stocks: 'Stocks',
+  hardware: 'Hardware',
+  sound: 'Sound',
+  calendar: 'Calendar',
+  youtube: 'YouTube',
+};
+
 export interface NamedLayout {
   name: string;
   layout: Layout[];
@@ -193,6 +203,155 @@ export const PRESETS: NamedLayout[] = [
 ];
 
 export const DEFAULT_LAYOUT = PRESETS[0];
+
+// ── BSP dynamic layout ────────────────────────────────────────────────────────
+// Each preset is encoded as a Binary Space Partition tree.  When widgets are
+// hidden, pruneTree collapses the tree (the surviving sibling expands to fill
+// the full parent region), then renderTree computes gap-free Layout[] coords.
+
+type LeafNode  = { type: 'leaf'; id: WidgetId };
+type VSplitNode = { type: 'v'; r: number; a: SplitNode; b: SplitNode }; // vertical (x) split, r = left fraction
+type HSplitNode = { type: 'h'; r: number; a: SplitNode; b: SplitNode }; // horizontal (y) split, r = top fraction
+type SplitNode = LeafNode | VSplitNode | HSplitNode;
+
+const l = (id: WidgetId): LeafNode => ({ type: 'leaf', id });
+const v = (r: number, a: SplitNode, b: SplitNode): VSplitNode => ({ type: 'v', r, a, b });
+const h = (r: number, a: SplitNode, b: SplitNode): HSplitNode => ({ type: 'h', r, a, b });
+
+const WIDGET_CONSTRAINTS: Record<WidgetId, { minW: number; minH: number }> = {
+  weather:  { minW: 4, minH: 4 },
+  spotify:  { minW: 4, minH: 5 },
+  stocks:   { minW: 5, minH: 5 },
+  hardware: { minW: 6, minH: 4 },
+  sound:    { minW: 3, minH: 3 },
+  calendar: { minW: 4, minH: 4 },
+  youtube:  { minW: 6, minH: 6 },
+};
+
+// Each tree mirrors its static PRESETS counterpart exactly (verified col-by-col).
+const PRESET_TREES: Record<string, SplitNode> = {
+  // Default: 4-up top row | youtube+sound mid | hardware full-width bottom
+  Default: h(17/22,
+    h(8/17,
+      v(6/24, l('weather'), v(6/18, l('spotify'), v(.5, l('stocks'), l('calendar')))),
+      v(14/24, l('youtube'), l('sound')),
+    ),
+    l('hardware'),
+  ),
+
+  // Markets: stocks+hardware left | youtube top-right, 2×2 info grid bottom-right
+  Markets: v(.5,
+    h(12/22, l('stocks'), l('hardware')),
+    h(12/22, l('youtube'), v(.5,
+      h(6/10, l('spotify'), l('weather')),
+      h(6/10, l('calendar'), l('sound')),
+    )),
+  ),
+
+  // Media: spotify+sound left column | youtube top-right, 2×2 grid bottom-right
+  Media: v(9/24,
+    h(15/22, l('spotify'), l('sound')),
+    h(11/22, l('youtube'), v(8/15,
+      h(6/11, l('stocks'), l('weather')),
+      h(6/11, l('hardware'), l('calendar')),
+    )),
+  ),
+
+  // System: hardware+2 left | youtube top-right, stocks/weather + sound bottom-right
+  System: v(14/24,
+    h(11/22, l('hardware'), v(6/14, l('spotify'), l('calendar'))),
+    h(11/22, l('youtube'), h(6/11,
+      v(.5, l('stocks'), l('weather')),
+      l('sound'),
+    )),
+  ),
+
+  // Focus: spotify full-height left | youtube+stocks top, hardware+weather/sound+calendar bottom
+  Focus: v(8/24,
+    l('spotify'),
+    h(11/22,
+      v(10/16, l('youtube'), l('stocks')),
+      v(6/16, l('hardware'), v(.5,
+        h(6/11, l('weather'), l('sound')),
+        l('calendar'),
+      )),
+    ),
+  ),
+
+  // Chill: info strip left | stocks+sound mid | youtube+spotify full-height right
+  Chill: v(5/24,
+    h(7/22, l('weather'), h(8/15, l('hardware'), l('calendar'))),
+    v(6/19,
+      h(14/22, l('stocks'), l('sound')),
+      v(7/13, l('youtube'), l('spotify')),
+    ),
+  ),
+
+  // Wide: stocks+youtube equal top | hardware, spotify, weather/sound, calendar bottom
+  Wide: h(11/22,
+    v(.5, l('stocks'), l('youtube')),
+    v(9/24, l('hardware'), v(7/15,
+      l('spotify'),
+      v(.5, h(6/11, l('weather'), l('sound')), l('calendar')),
+    )),
+  ),
+
+  // YouTube: youtube+hardware left | spotify, stocks, calendar/weather/sound right
+  YouTube: v(14/24,
+    h(14/22, l('youtube'), l('hardware')),
+    h(8/22, l('spotify'), h(6/14,
+      l('stocks'),
+      v(6/10, l('calendar'), h(.5, l('weather'), l('sound'))),
+    )),
+  ),
+};
+
+function pruneTree(node: SplitNode, visible: Set<string>): SplitNode | null {
+  if (node.type === 'leaf') return visible.has(node.id) ? node : null;
+  const a = pruneTree(node.a, visible);
+  const b = pruneTree(node.b, visible);
+  if (!a && !b) return null;
+  if (!a) return b;
+  if (!b) return a;
+  return { ...node, a, b } as SplitNode;
+}
+
+function renderTree(node: SplitNode, x: number, y: number, w: number, ht: number): Layout[] {
+  if (node.type === 'leaf') {
+    const c = WIDGET_CONSTRAINTS[node.id];
+    return [{ i: node.id, x, y, w, h: ht, minW: c.minW, minH: c.minH }];
+  }
+  if (node.type === 'v') {
+    if (w <= 1) return renderTree(node.a, x, y, w, ht);
+    const lw = Math.min(w - 1, Math.max(1, Math.round(w * node.r)));
+    return [
+      ...renderTree(node.a, x, y, lw, ht),
+      ...renderTree(node.b, x + lw, y, w - lw, ht),
+    ];
+  }
+  // node.type === 'h'
+  if (ht <= 1) return renderTree(node.a, x, y, w, ht);
+  const th = Math.min(ht - 1, Math.max(1, Math.round(ht * node.r)));
+  return [
+    ...renderTree(node.a, x, y, w, th),
+    ...renderTree(node.b, x, y + th, w, ht - th),
+  ];
+}
+
+/** Generate a gap-free Layout[] for `presetName` containing only `visibleIds`.
+ *  Returns null if the preset is unknown or all widgets are hidden. */
+export function generateLayout(
+  presetName: string,
+  visibleIds: WidgetId[],
+  cols = 24,
+  rows = 22,
+): Layout[] | null {
+  const tree = PRESET_TREES[presetName];
+  if (!tree) return null;
+  const pruned = pruneTree(tree, new Set(visibleIds));
+  if (!pruned) return null;
+  return renderTree(pruned, 0, 0, cols, rows);
+}
 
 // Appends any widget IDs missing from a stored/custom layout to the bottom row.
 // Ensures new widgets added to ALL_WIDGET_IDS automatically appear on load.
