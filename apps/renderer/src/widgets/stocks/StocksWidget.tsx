@@ -1,5 +1,4 @@
 import { useState, useRef, type KeyboardEvent } from 'react';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Pencil, X, Plus } from 'lucide-react';
 import { useStocks } from './useStocks';
 import { useStocksStore } from '../../store/stocksStore';
@@ -18,32 +17,6 @@ function fmtPrice(n: number): string {
   return fmt(n, 2);
 }
 
-function SparklineChart({ data, positive }: { data: number[]; positive: boolean }) {
-  if (data.length < 2) return null;
-  const chartData = data.map((v, i) => ({ i, v }));
-  const color = positive ? '#34d399' : '#f87171';
-  return (
-    <ResponsiveContainer width="100%" height={32}>
-      <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
-        <defs>
-          <linearGradient id={`grad-${positive ? 'g' : 'r'}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1.5}
-          fill={`url(#grad-${positive ? 'g' : 'r'})`}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
 
 function QuoteCard({ q }: { q: StockQuote }) {
   const positive = q.change >= 0;
@@ -63,8 +36,6 @@ function QuoteCard({ q }: { q: StockQuote }) {
           {positive ? '+' : ''}{fmt(q.changePercent)}%
         </span>
       </div>
-
-      <SparklineChart data={q.sparkline} positive={positive} />
 
       <div className="flex items-baseline justify-between gap-1">
         <span className="font-mono text-white text-base font-semibold tabular-nums leading-none">

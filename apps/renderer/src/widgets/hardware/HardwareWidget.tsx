@@ -396,7 +396,7 @@ function ConfigPanel({
 export function HardwareWidget() {
   const { query, history } = useHardware();
   const { visible, setVisible } = useHardwareStore();
-  const [view, setView] = useState<ViewMode>('bars');
+  const [view, setView] = useState<ViewMode>('sparks');
   const [configOpen, setConfigOpen] = useState(false);
 
   // Callback ref so the effect wires up after loading/error resolves
@@ -470,15 +470,6 @@ export function HardwareWidget() {
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 bg-zinc-800 rounded-md p-0.5">
             <button
-              onClick={() => setView('bars')}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
-                view === 'bars' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <BarChart2 size={10} />
-              Bars
-            </button>
-            <button
               onClick={() => setView('sparks')}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
                 view === 'sparks' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
@@ -486,6 +477,15 @@ export function HardwareWidget() {
             >
               <Activity size={10} />
               Sparks
+            </button>
+            <button
+              onClick={() => setView('bars')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
+                view === 'bars' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <BarChart2 size={10} />
+              Bars
             </button>
           </div>
           <button
