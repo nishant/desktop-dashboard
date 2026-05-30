@@ -24,15 +24,19 @@ function useGeolocation(): { coords: Coords | null; denied: boolean } {
 export function useWeather() {
   const { coords, denied } = useGeolocation();
 
+  const query = useQuery<WeatherData>({
+    queryKey: ['weather', coords],
+    queryFn: () =>
+      apiClient.get<WeatherData>(`/api/weather?lat=${coords!.lat}&lon=${coords!.lon}`),
+    enabled: coords !== null,
+    refetchInterval: 15 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
+  });
+
   return {
     denied,
-    ...useQuery<WeatherData>({
-      queryKey: ['weather', coords],
-      queryFn: () =>
-        apiClient.get<WeatherData>(`/api/weather?lat=${coords!.lat}&lon=${coords!.lon}`),
-      enabled: coords !== null,
-      refetchInterval: 15 * 60 * 1000,
-      staleTime: 15 * 60 * 1000,
-    }),
+    // True while we're still waiting on the geolocation callback (not yet denied, not yet resolved)
+    waitingForLocation: coords === null && !denied,
+    ...query,
   };
 }

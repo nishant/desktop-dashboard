@@ -18,7 +18,7 @@ function formatDay(dateStr: string): string {
 }
 
 export function WeatherWidget() {
-  const { data, isLoading, isError, denied } = useWeather();
+  const { data, isLoading, isError, denied, waitingForLocation } = useWeather();
 
   // Callback ref — fires when the element actually mounts (after loading resolves),
   // unlike useRef which is null on the first render due to the early returns below.
@@ -71,7 +71,7 @@ export function WeatherWidget() {
     };
   }, [hourlyEl]);
 
-  if (isLoading) {
+  if (waitingForLocation || isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <span className="text-th-ghost text-sm">Loading…</span>

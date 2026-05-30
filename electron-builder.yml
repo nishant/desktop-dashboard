@@ -44,6 +44,8 @@ win:
 mac:
   target: dmg
   icon: build/icon.icns
+  extendInfo:
+    NSLocationWhenInUseUsageDescription: "Dashboard uses your location to show local weather."
 
 nsis:
   oneClick: false
