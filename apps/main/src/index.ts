@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, globalShortcut, session } from 'electron';
 import path from 'path';
 import { spawnServer, stopServer } from './server/spawn';
 import { registerIpcHandlers } from './ipc';
@@ -36,6 +36,12 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  // Electron blocks geolocation for file:// by default — grant it so the weather
+  // widget can call navigator.geolocation without a macOS prompt being suppressed.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'geolocation');
+  });
+
   await spawnServer();
   registerIpcHandlers(ipcMain);
   createWindow();
