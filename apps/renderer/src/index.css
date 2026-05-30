@@ -110,6 +110,176 @@
   --t-invert-text: 15   5  10;
 }
 
+/* ── Forest (deep green dark, lime accent) ───────────────────────────────── */
+[data-theme="forest"] {
+  --t-bg:          7  15  11;
+  --t-surface:    12  24  18;
+  --t-elevated:   20  38  28;
+  --t-overlay:    30  54  40;
+  --t-line:       20  38  28;
+  --t-hi:        220 252 231;   /* green-50  */
+  --t-2:         134 239 172;   /* green-300 */
+  --t-3:          74 152 110;
+  --t-ghost:      52 100  74;
+  --t-accent:    163 230  53;   /* lime-400  */
+  --t-bar:         5  11   8;
+  --t-invert-bg: 163 230  53;   /* lime-400  */
+  --t-invert-text: 7  15  11;
+}
+
+/* ── Sunset (warm orange / amber dark) ───────────────────────────────────── */
+[data-theme="sunset"] {
+  --t-bg:         20  10   6;
+  --t-surface:    32  17  10;
+  --t-elevated:   48  26  15;
+  --t-overlay:    66  38  22;
+  --t-line:       48  26  15;
+  --t-hi:        255 237 213;   /* orange-100 */
+  --t-2:         253 186 116;   /* orange-300 */
+  --t-3:         200 130  70;
+  --t-ghost:     130  84  50;
+  --t-accent:    251 146  60;   /* orange-400 */
+  --t-bar:        14   7   4;
+  --t-invert-bg: 251 146  60;   /* orange-400 */
+  --t-invert-text: 20 10   6;
+}
+
+/* ── Dracula (classic purple / pink dark) ────────────────────────────────── */
+[data-theme="dracula"] {
+  --t-bg:         30  31  41;
+  --t-surface:    40  42  54;   /* #282a36 */
+  --t-elevated:   54  57  72;
+  --t-overlay:    68  71  90;   /* #44475a */
+  --t-line:       68  71  90;
+  --t-hi:        248 248 242;   /* #f8f8f2 */
+  --t-2:         189 147 249;   /* purple #bd93f9 */
+  --t-3:         150 156 184;
+  --t-ghost:      98 114 164;   /* comment #6272a4 */
+  --t-accent:    255 121 198;   /* pink #ff79c6 */
+  --t-bar:        30  31  41;
+  --t-invert-bg: 189 147 249;   /* purple #bd93f9 */
+  --t-invert-text: 40 42  54;
+}
+
+/* ── Nord (arctic blue-gray dark) ────────────────────────────────────────── */
+[data-theme="nord"] {
+  --t-bg:         36  41  51;
+  --t-surface:    46  52  64;   /* #2e3440 */
+  --t-elevated:   59  66  82;   /* #3b4252 */
+  --t-overlay:    67  76  94;   /* #434c5e */
+  --t-line:       59  66  82;
+  --t-hi:        236 239 244;   /* #eceff4 */
+  --t-2:         216 222 233;   /* #d8dee9 */
+  --t-3:         143 152 170;
+  --t-ghost:      76  86 106;   /* #4c566a */
+  --t-accent:    136 192 208;   /* frost #88c0d0 */
+  --t-bar:        36  41  51;
+  --t-invert-bg: 136 192 208;   /* frost #88c0d0 */
+  --t-invert-text: 46 52  64;
+}
+
+/* ── Solarized (light tan / blue) ────────────────────────────────────────── */
+[data-theme="solarized"] {
+  --t-bg:        253 246 227;   /* base3 #fdf6e3 */
+  --t-surface:   238 232 213;   /* base2 #eee8d5 */
+  --t-elevated:  224 218 199;
+  --t-overlay:   211 205 187;
+  --t-line:      211 205 187;
+  --t-hi:          7  54  66;   /* base02 #073642 */
+  --t-2:          88 110 117;   /* base01 #586e75 */
+  --t-3:         101 123 131;   /* base00 #657b83 */
+  --t-ghost:     147 161 161;   /* base1 #93a1a1 */
+  --t-accent:     38 139 210;   /* blue #268bd2 */
+  --t-bar:       238 232 213;   /* base2 #eee8d5 */
+  --t-invert-bg:   7  54  66;   /* base02 #073642 */
+  --t-invert-text: 253 246 227;
+}
+
+/* ── Crimson (deep red dark) ─────────────────────────────────────────────── */
+[data-theme="crimson"] {
+  --t-bg:         18   6   8;
+  --t-surface:    30  10  13;
+  --t-elevated:   46  16  20;
+  --t-overlay:    64  24  30;
+  --t-line:       46  16  20;
+  --t-hi:        254 226 226;   /* red-100 */
+  --t-2:         252 165 165;   /* red-300 */
+  --t-3:         200 110 110;
+  --t-ghost:     130  70  72;
+  --t-accent:    248 113 113;   /* red-400 */
+  --t-bar:        12   4   5;
+  --t-invert-bg: 248 113 113;   /* red-400 */
+  --t-invert-text: 18  6   8;
+}
+
+/* ── Mocha (warm coffee / caramel dark) ──────────────────────────────────── */
+[data-theme="mocha"] {
+  --t-bg:         22  17  13;
+  --t-surface:    34  26  20;
+  --t-elevated:   50  39  30;
+  --t-overlay:    68  54  42;
+  --t-line:       50  39  30;
+  --t-hi:        245 235 224;
+  --t-2:         214 188 160;
+  --t-3:         168 142 116;
+  --t-ghost:     110  90  72;
+  --t-accent:    217 164 102;   /* caramel */
+  --t-bar:        16  12   9;
+  --t-invert-bg: 217 164 102;   /* caramel */
+  --t-invert-text: 22 17  13;
+}
+
+/* ── Neon (cyberpunk dark, magenta accent) ───────────────────────────────── */
+[data-theme="neon"] {
+  --t-bg:          8   6  16;
+  --t-surface:    16  12  28;
+  --t-elevated:   26  20  44;
+  --t-overlay:    38  30  62;
+  --t-line:       26  20  44;
+  --t-hi:        240 240 255;
+  --t-2:         103 232 249;   /* cyan-300 */
+  --t-3:         110 130 180;
+  --t-ghost:      70  60 110;
+  --t-accent:    232 121 249;   /* fuchsia-400 */
+  --t-bar:         5   4  11;
+  --t-invert-bg: 232 121 249;   /* fuchsia-400 */
+  --t-invert-text:  8  6  16;
+}
+
+/* ── Sandstorm (warm sepia light) ────────────────────────────────────────── */
+[data-theme="sandstorm"] {
+  --t-bg:        245 240 230;
+  --t-surface:   255 252 245;
+  --t-elevated:  234 226 210;
+  --t-overlay:   220 210 190;
+  --t-line:      220 210 190;
+  --t-hi:         60  48  32;
+  --t-2:         110  92  64;
+  --t-3:         140 122  92;
+  --t-ghost:     180 164 138;
+  --t-accent:    194 120  40;   /* burnt amber */
+  --t-bar:       250 246 238;
+  --t-invert-bg:  60  48  32;
+  --t-invert-text: 245 240 230;
+}
+
+/* ── Arctic (cool blue light) ────────────────────────────────────────────── */
+[data-theme="arctic"] {
+  --t-bg:        240 247 255;
+  --t-surface:   255 255 255;
+  --t-elevated:  224 238 252;
+  --t-overlay:   200 222 244;
+  --t-line:      200 222 244;
+  --t-hi:         12  34  64;
+  --t-2:          51  85 130;
+  --t-3:          90 122 165;
+  --t-ghost:     150 180 215;
+  --t-accent:     14 116 215;   /* blue-600 */
+  --t-bar:       248 252 255;
+  --t-invert-bg:  12  34  64;
+  --t-invert-text: 240 247 255;
+}
+
 * {
   box-sizing: border-box;
 }

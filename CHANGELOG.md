@@ -4,6 +4,26 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: theme menu expansion — 10 additional themes
+**Branch:** `claude/theme-menu-expansion-WklmG` → `master`
+**Date:** 2026-05-29
+
+### Added
+- **10 new themes** in `src/themes.ts` (`ThemeId` union + `THEMES` array) and `src/index.css` (`[data-theme="..."]` custom-property blocks), bringing the total to 15. The `ThemeMenu` already renders from `THEMES`, so no component changes were needed.
+  - **Forest** — deep green dark, lime-400 accent
+  - **Sunset** — warm orange/amber dark, orange-400 accent
+  - **Dracula** — classic purple/pink dark (`#282a36`), pink accent
+  - **Nord** — arctic blue-gray dark, frost accent
+  - **Solarized** — light tan (`#fdf6e3`) base, blue accent
+  - **Crimson** — deep red dark, red-400 accent
+  - **Mocha** — warm coffee/caramel dark, caramel accent
+  - **Neon** — cyberpunk dark, fuchsia-400 accent on cyan text
+  - **Sandstorm** — warm sepia light, burnt-amber accent
+  - **Arctic** — cool blue light, blue-600 accent
+- Each theme defines all 13 semantic tokens (`--t-bg` … `--t-invert-text`), so existing widgets pick them up with no further changes.
+
+---
+
 ## [PR #24] feat: theming system — 5 themes, ThemeMenu
 **Branch:** `feat/theming` → `master`
 **Date:** 2026-05-27
