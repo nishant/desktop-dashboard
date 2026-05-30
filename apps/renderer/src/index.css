@@ -146,36 +146,36 @@
 
 /* ── Dracula (classic purple / pink dark) ────────────────────────────────── */
 [data-theme="dracula"] {
-  --t-bg:         30  31  41;
-  --t-surface:    40  42  54;   /* #282a36 */
-  --t-elevated:   54  57  72;
-  --t-overlay:    68  71  90;   /* #44475a */
-  --t-line:       68  71  90;
+  --t-bg:         21  18  36;   /* pushed clearly purple — was 30 31 41 (too grey) */
+  --t-surface:    32  28  52;
+  --t-elevated:   46  42  70;
+  --t-overlay:    62  58  90;
+  --t-line:       62  58  90;
   --t-hi:        248 248 242;   /* #f8f8f2 */
   --t-2:         189 147 249;   /* purple #bd93f9 */
   --t-3:         150 156 184;
   --t-ghost:      98 114 164;   /* comment #6272a4 */
   --t-accent:    255 121 198;   /* pink #ff79c6 */
-  --t-bar:        30  31  41;
+  --t-bar:        15  12  28;
   --t-invert-bg: 189 147 249;   /* purple #bd93f9 */
-  --t-invert-text: 40 42  54;
+  --t-invert-text: 32 28  52;
 }
 
 /* ── Nord (arctic blue-gray dark) ────────────────────────────────────────── */
 [data-theme="nord"] {
-  --t-bg:         36  41  51;
-  --t-surface:    46  52  64;   /* #2e3440 */
-  --t-elevated:   59  66  82;   /* #3b4252 */
-  --t-overlay:    67  76  94;   /* #434c5e */
-  --t-line:       59  66  82;
+  --t-bg:         24  30  46;   /* pushed clearly blue — was 36 41 51 (too grey) */
+  --t-surface:    36  46  66;
+  --t-elevated:   52  62  84;
+  --t-overlay:    68  80 104;
+  --t-line:       52  62  84;
   --t-hi:        236 239 244;   /* #eceff4 */
   --t-2:         216 222 233;   /* #d8dee9 */
   --t-3:         143 152 170;
   --t-ghost:      76  86 106;   /* #4c566a */
   --t-accent:    136 192 208;   /* frost #88c0d0 */
-  --t-bar:        36  41  51;
+  --t-bar:        18  23  38;
   --t-invert-bg: 136 192 208;   /* frost #88c0d0 */
-  --t-invert-text: 46 52  64;
+  --t-invert-text: 24 30  46;
 }
 
 /* ── Solarized (light tan / blue) ────────────────────────────────────────── */
