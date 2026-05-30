@@ -9,4 +9,5 @@ export type { StocksData, StockQuote } from './types/stocks';
 export type { HardwareData, CpuData, GpuData, DiskIo, DiskUsage, NetworkIo } from './types/hardware';
 export type { SoundData, AudioDevice, AudioSession } from './types/sound';
 export type { YoutubeVideo, YoutubeSearchPage } from './types/youtube';
+export type { TwitchChannel, TwitchSearchPage } from './types/twitch';
 export type { IpcChannels, ElectronAPI } from './types/ipc';

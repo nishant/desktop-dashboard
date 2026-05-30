@@ -4,6 +4,31 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: Twitch widget — channel search + in-tile playback
+**Branch:** `feat/twitch-widget` → `master`
+**Date:** 2026-05-30
+
+### Added
+- **New `twitch` widget** mirroring the YouTube widget: search Twitch channels, select one to play the live stream embedded in the tile, with a search overlay that keeps playback mounted in the background.
+- **`packages/shared/src/types/twitch.ts`** — `TwitchChannel` + `TwitchSearchPage` types (exported from `shared/src/index.ts`).
+- **`packages/server/src/routes/twitch.ts`** — `GET /api/twitch/search?q=` proxy. Auth uses a cached **client-credentials app access token** (no user OAuth needed for search/playback); token refreshes a minute before expiry and on any 401. Registered under `/api/twitch` in `server/src/index.ts`.
+- **`apps/renderer/src/widgets/twitch/`** — `TwitchWidget.tsx` + `useTwitch.ts` hook.
+- Registered `twitch` in `lib/layouts.ts` (`WidgetId`, `ALL_WIDGET_IDS`, `WIDGET_TITLES`, `WIDGET_CONSTRAINTS`) and `DashboardGrid.tsx` (`WIDGET_COMPONENTS`).
+- **`generateLayout()`** now appends any visible widget missing from a preset's BSP tree as a bottom full-width row, so `twitch` appears across all presets without rewriting the gap-free trees. (Twitch can be woven into the preset trees later for tighter layouts.)
+- **`.env.example`** — `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, and `TWITCH_REDIRECT_URI` (set to the `http://localhost:...` form — Twitch only permits non-https for the literal `localhost` host, not `127.0.0.1`).
+- **Media layout** — YouTube + Twitch stacked left (pure video column), Spotify top-right, Stocks/Hardware side-by-side bottom-right, Weather/Calendar/Sound stacked far-right.
+- **Settings UI** (`SettingsModal.tsx`) — grouped credential inputs for Alpaca (Stocks) and Twitch. Password fields with show/hide toggle, loading state, idle/saving/saved/error states, Escape to close. Credentials encrypted with OS keychain (`safeStorage`) via IPC; server restarts with new env vars on save.
+- **App icon** — 1024×1024 dashboard motif icon (`build/icon.icns` + `build/icon.ico`) with 2×2 widget grid: emerald line chart, hardware progress bars, music waveform, and weather sun. All iconset sizes generated.
+- **Packaging fixes** — `electron-builder.yml`: `asar: false` so server can be spawned from disk. Server spawn path corrected to `app.getAppPath()/server/index.js`. `restartServer()` kills + respawns child process with fresh env after credential save.
+- **Credential IPC** — `credentials:get-all` / `credentials:save-all` handlers in main process; `safeStorage` read/write in `apps/main/src/credentials.ts`; preload exposes `window.electron.credentials`.
+- **Settings button** in Titlebar right-side menu (rightmost position).
+
+### Notes / TODO
+- **Playback `parent` param:** the Twitch player iframe requires `parent=<hostname>`. Works in dev (renderer served from `localhost`); a packaged `file://` build has no valid host, so embedded playback won't load there until the renderer is served over a localhost URL.
+- `TWITCH_REDIRECT_URI` is currently unused (search/playback are app-token only) — kept for future user-context OAuth (followed channels, etc.).
+
+---
+
 ## feat/named-custom-themes — Save and name custom themes
 **Branch:** `feat/named-custom-themes` → `master`
 **Date:** 2026-05-30

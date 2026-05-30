@@ -1,9 +1,9 @@
 import type { Layout } from 'react-grid-layout';
 
-export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar' | 'youtube';
+export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar' | 'youtube' | 'twitch';
 
 export const ALL_WIDGET_IDS: WidgetId[] = [
-  'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube',
+  'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube', 'twitch',
 ];
 
 export const WIDGET_TITLES: Record<WidgetId, string> = {
@@ -14,6 +14,7 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
   sound: 'Sound',
   calendar: 'Calendar',
   youtube: 'YouTube',
+  twitch: 'Twitch',
 };
 
 export interface NamedLayout {
@@ -226,6 +227,7 @@ const WIDGET_CONSTRAINTS: Record<WidgetId, { minW: number; minH: number }> = {
   sound:    { minW: 3, minH: 3 },
   calendar: { minW: 4, minH: 4 },
   youtube:  { minW: 6, minH: 6 },
+  twitch:   { minW: 6, minH: 6 },
 };
 
 // Each tree mirrors its static PRESETS counterpart exactly (verified col-by-col).
@@ -350,7 +352,24 @@ export function generateLayout(
   if (!tree) return null;
   const pruned = pruneTree(tree, new Set(visibleIds));
   if (!pruned) return null;
-  return renderTree(pruned, 0, 0, cols, rows);
+  const base = renderTree(pruned, 0, 0, cols, rows);
+
+  // Widgets not woven into this preset's BSP tree (e.g. added after the presets
+  // were authored, like `twitch`) won't be emitted by renderTree. Append any
+  // such visible widgets as a full-width row at the bottom so every visible
+  // widget still gets a non-overlapping slot.
+  const placed = new Set(base.map((item) => item.i));
+  const missing = visibleIds.filter((id) => !placed.has(id));
+  if (missing.length === 0) return base;
+  const maxY = Math.max(...base.map((item) => item.y + item.h), 0);
+  const w = Math.floor(cols / missing.length);
+  return [
+    ...base,
+    ...missing.map((id, i) => {
+      const c = WIDGET_CONSTRAINTS[id];
+      return { i: id, x: i * w, y: maxY, w, h: 6, minW: c.minW, minH: c.minH };
+    }),
+  ];
 }
 
 // Appends any widget IDs missing from a stored/custom layout to the bottom row.
