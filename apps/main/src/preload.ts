@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ElectronAPI, IpcChannels } from '@dash/shared';
+import type { ElectronAPI, IpcChannels, CredentialKey } from '@dash/shared';
 
 const electronAPI: ElectronAPI = {
   minimize: () => ipcRenderer.send('app:minimize' satisfies IpcChannels),
@@ -9,6 +9,14 @@ const electronAPI: ElectronAPI = {
     const channel: IpcChannels = 'spotify:token-store';
     ipcRenderer.on(channel, cb);
     return () => ipcRenderer.removeListener(channel, cb);
+  },
+  credentials: {
+    getAll: () =>
+      ipcRenderer.invoke('credentials:get-all' satisfies IpcChannels) as Promise<
+        Partial<Record<CredentialKey, string>>
+      >,
+    saveAll: (creds: Partial<Record<CredentialKey, string>>) =>
+      ipcRenderer.invoke('credentials:save-all' satisfies IpcChannels, creds) as Promise<void>,
   },
 };
 

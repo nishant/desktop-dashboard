@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Pin, Layers, Palette, ArrowLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { LayoutGrid, Pin, Layers, Palette, ArrowLeft, ChevronRight, Plus, X, Settings } from 'lucide-react';
+import { SettingsModal } from './SettingsModal';
 import { PRESETS, ALL_WIDGET_IDS, WIDGET_TITLES } from '../lib/layouts';
 import { useLayoutStore } from '../store/layoutStore';
 import { useThemeStore } from '../store/themeStore';
@@ -556,6 +557,7 @@ function ThemeMenu() {
 export function Titlebar() {
   const { activePreset, applyPreset, pinnedPresets } = useLayoutStore();
   const clock = useClock();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div
@@ -590,12 +592,24 @@ export function Titlebar() {
         <span className="text-th-3 text-[11px] tabular-nums">{clock}</span>
       </div>
 
-      {/* Right: theme + widget + layout menus */}
+      {/* Right: theme + widget + layout menus + settings */}
       <div className="ml-auto flex items-center gap-1">
         <ThemeMenu />
         <WidgetsMenu />
         <LayoutsMenu />
+        <div style={noDragStyle}>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className={menuBtn(false)}
+            title="Settings"
+          >
+            <Settings size={11} />
+            Settings
+          </button>
+        </div>
       </div>
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

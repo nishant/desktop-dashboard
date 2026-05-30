@@ -10,6 +10,7 @@ import { HardwareWidget } from '../widgets/hardware/HardwareWidget';
 import { SoundWidget } from '../widgets/sound/SoundWidget';
 import { CalendarWidget } from '../widgets/calendar/CalendarWidget';
 import { YoutubeWidget } from '../widgets/youtube/YoutubeWidget';
+import { TwitchWidget } from '../widgets/twitch/TwitchWidget';
 import { TITLEBAR_H } from './Titlebar';
 import { WIDGET_TITLES } from '../lib/layouts';
 import type { WidgetId } from '../lib/layouts';
@@ -27,6 +28,7 @@ const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
   sound: <SoundWidget />,
   calendar: <CalendarWidget />,
   youtube: <YoutubeWidget />,
+  twitch: <TwitchWidget />,
 };
 
 function useRowHeight(layout: Layout[]): number {
