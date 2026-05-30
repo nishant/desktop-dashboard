@@ -31,9 +31,13 @@ export async function spawnServer(): Promise<void> {
     // Inject credentials stored via safeStorage so the server reads them from process.env
     const credentials = readCredentials();
 
+    // process.execPath in Electron is the Electron binary, not Node.js.
+    // Setting ELECTRON_RUN_AS_NODE=1 makes the Electron binary behave as a
+    // plain Node.js runner — the correct way to spawn Node scripts from Electron.
     serverProcess = spawn(process.execPath, [serverEntry], {
       env: {
         ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
         NODE_ENV: 'production',
         SERVER_PORT: String(port),
         ...credentials,
