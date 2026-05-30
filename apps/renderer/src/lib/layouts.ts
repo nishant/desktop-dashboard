@@ -61,23 +61,20 @@ export const PRESETS: NamedLayout[] = [
     ],
   },
   {
-    // Spotify left, youtube top-right wide, small widgets bottom
-    // Cols  0-8:  spotify(15) + sound(7)     = 22
-    // Cols  9-23: youtube(11) + stocks(6)    + hardware(5) = 22  [9-16]
-    // Cols 17-23: youtube(11) + weather(5)   + calendar(6)       [17-23]
-    // Corrected:
-    // Cols  0-8:  spotify(15) + sound(7)   = 22
-    // Cols  9-16: youtube(11) + stocks(6)  + hardware(5) = 22
-    // Cols 17-23: youtube(11) + weather(5) + calendar(6) = 22
+    // Left half = pure video: YouTube stacked on Twitch. Right = Spotify + slim info column, stocks+hardware below.
+    // Cols  0-11: youtube(11) + twitch(11) = 22
+    // Cols 12-19: spotify(11) + stocks(5) + hardware(6) = 22
+    // Cols 20-23: weather(6)  + calendar(3) + sound(2) + stocks(5) + hardware(6) = 22
     name: 'Media',
     layout: [
-      { i: 'spotify',  x: 0,  y: 0,  w: 9,  h: 15, minW: 4, minH: 5 },
-      { i: 'youtube',  x: 9,  y: 0,  w: 15, h: 11, minW: 6, minH: 6 },
-      { i: 'stocks',   x: 9,  y: 11, w: 8,  h: 6,  minW: 5, minH: 5 },
-      { i: 'hardware', x: 17, y: 11, w: 7,  h: 6,  minW: 6, minH: 4 },
-      { i: 'weather',  x: 9,  y: 17, w: 8,  h: 5,  minW: 4, minH: 4 },
-      { i: 'calendar', x: 17, y: 17, w: 7,  h: 5,  minW: 4, minH: 4 },
-      { i: 'sound',    x: 0,  y: 15, w: 9,  h: 7,  minW: 3, minH: 3 },
+      { i: 'youtube',  x: 0,  y: 0,  w: 12, h: 11, minW: 6, minH: 6 },
+      { i: 'twitch',   x: 0,  y: 11, w: 12, h: 11, minW: 6, minH: 6 },
+      { i: 'spotify',  x: 12, y: 0,  w: 8,  h: 11, minW: 4, minH: 5 },
+      { i: 'weather',  x: 20, y: 0,  w: 4,  h: 6,  minW: 4, minH: 4 },
+      { i: 'calendar', x: 20, y: 6,  w: 4,  h: 3,  minW: 4, minH: 3 },
+      { i: 'sound',    x: 20, y: 9,  w: 4,  h: 2,  minW: 3, minH: 2 },
+      { i: 'stocks',   x: 12, y: 11, w: 6,  h: 11, minW: 5, minH: 5 },
+      { i: 'hardware', x: 18, y: 11, w: 6,  h: 11, minW: 6, minH: 4 },
     ],
   },
   {
@@ -224,8 +221,8 @@ const WIDGET_CONSTRAINTS: Record<WidgetId, { minW: number; minH: number }> = {
   spotify:  { minW: 4, minH: 5 },
   stocks:   { minW: 5, minH: 5 },
   hardware: { minW: 6, minH: 4 },
-  sound:    { minW: 3, minH: 3 },
-  calendar: { minW: 4, minH: 4 },
+  sound:    { minW: 3, minH: 2 },
+  calendar: { minW: 4, minH: 3 },
   youtube:  { minW: 6, minH: 6 },
   twitch:   { minW: 6, minH: 6 },
 };
@@ -250,13 +247,16 @@ const PRESET_TREES: Record<string, SplitNode> = {
     )),
   ),
 
-  // Media: spotify+sound left column | youtube top-right, 2×2 grid bottom-right
-  Media: v(9/24,
-    h(15/22, l('spotify'), l('sound')),
-    h(11/22, l('youtube'), v(8/15,
-      h(6/11, l('stocks'), l('weather')),
-      h(6/11, l('hardware'), l('calendar')),
-    )),
+  // Media: left = youtube stacked on twitch | right = spotify(w=8)+slim info col, stocks+hardware below
+  // Cols  0-11: youtube(11) + twitch(11) = 22
+  // Cols 12-19: spotify(11) + stocks(5) + hardware(6) = 22
+  // Cols 20-23: weather(6)  + calendar(3) + sound(2) + stocks(5) + hardware(6) = 22
+  Media: v(.5,
+    h(.5, l('youtube'), l('twitch')),
+    h(11/22,
+      v(8/12, l('spotify'), h(6/11, l('weather'), h(3/5, l('calendar'), l('sound')))),
+      v(.5, l('stocks'), l('hardware')),
+    ),
   ),
 
   // System: hardware+2 left | youtube top-right, stocks/weather + sound bottom-right
