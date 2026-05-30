@@ -4,6 +4,18 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: electron-builder config for monorepo packaging
+**Branch:** `fix/electron-builder-packaging` → `master`
+**Date:** 2026-05-30
+
+### Fixed
+- **`electronVersion: "33.4.11"`** added to `electron-builder.yml` — builder was unable to detect Electron version because it lives in `apps/main/node_modules` (workspace), not the root `node_modules`.
+- **`apps/main/package.json`** included in the bundled app root via `files` entry — electron-builder requires `app/package.json` to exist inside `Dashboard.app/Contents/Resources/app/`; tsc doesn't emit it.
+- **`package.json`** (root) — added `description` and `author` fields to silence builder warnings.
+- Produces `release/Dashboard-0.1.0-arm64.dmg` successfully on macOS arm64.
+
+---
+
 ## feat: Twitch widget — channel search + in-tile playback
 **Branch:** `feat/twitch-widget` → `master`
 **Date:** 2026-05-30
