@@ -1,6 +1,8 @@
 appId: com.nish.desktop-dashboard
 productName: Dashboard
 copyright: Copyright © 2025 Nish
+# Electron lives in apps/main/node_modules (workspace), not at root — pin the version explicitly.
+electronVersion: "33.4.11"
 
 # Disable asar so the server child process can be spawned directly from disk.
 # The server entry (packages/server/dist → server/) can't be executed from inside
@@ -15,6 +17,10 @@ files:
   - from: apps/main/dist
     to: .
     filter: ["**/*"]
+  # electron-builder requires package.json at the app root (not emitted by tsc)
+  - from: apps/main
+    to: .
+    filter: ["package.json"]
   - from: apps/renderer/dist
     to: renderer
     filter: ["**/*"]
