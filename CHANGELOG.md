@@ -4,6 +4,28 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat/theming-updates — ThemeMenu label, distinct swatches, custom theme
+**Branch:** `feat/theming-updates` → `master`
+**Date:** 2026-05-30
+
+### Added
+- **Custom theme** — four user-configurable color pickers (Background, Cards, Borders, Text) with live preview. Supports hex (`#rrggbb`, `#rgb`) and `rgb(r,g,b)` input; native color-picker swatch for point-and-click picking. All 13 semantic tokens derived automatically via linear mixing in `src/lib/colorUtils.ts`. Semantic/purposeful colors (green/red stocks, hardware read/write, muted indicators) are untouched.
+- **`src/lib/colorUtils.ts`** — `parseHex`, `hexToArr`, `buildCustomVars`, `CUSTOM_VAR_KEYS`. `buildCustomVars` maps 4 user hex colors → all 13 `--t-*` CSS var triples with blended surface/text levels.
+- **`CustomColors`** exported from `themeStore.ts` — `{ primary, secondary, tertiary, text }` with defaults matching Midnight; persisted to localStorage.
+
+### Changed
+- **ThemeMenu button** now shows `Themes` text alongside the palette icon + active-color bubble.
+- **ThemeMenu panel** is now two-panel: theme list → custom editor (with back arrow). Opening while `custom` is active goes straight to the editor. Named theme selection closes the panel; Custom navigates in.
+- **Distinct swatches** for previously similar grey themes:
+  - Contrast → `#facc15` (yellow accent) instead of `#111111`
+  - Dracula → `#bd93f9` (purple accent) instead of `#282a36`
+  - Nord → `#88c0d0` (frost cyan) instead of `#3b4252`
+- **Nord CSS vars** pushed bluer (`--t-bg: 24 30 46`, `--t-surface: 36 46 66`) — was too grey to distinguish from Midnight.
+- **Dracula CSS vars** pushed more purple (`--t-bg: 21 18 36`, `--t-surface: 32 28 52`) — was too grey to distinguish from Midnight.
+- **`App.tsx`** applies custom vars via `useLayoutEffect` on `document.documentElement` when `theme === 'custom'`; removes them when switching away. No `[data-theme="custom"]` CSS block needed.
+
+---
+
 ## feat: theme menu expansion — 10 additional themes
 **Branch:** `claude/theme-menu-expansion-WklmG` → `master`
 **Date:** 2026-05-29
