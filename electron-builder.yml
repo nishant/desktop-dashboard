@@ -32,13 +32,10 @@ files:
   - from: apps/renderer/dist
     to: renderer/dist
     filter: ["**/*"]
+  # Server is bundled by esbuild (all deps inlined) — only the single output file needed
   - from: packages/server/dist
     to: server
-    filter: ["**/*"]
-  - from: packages/shared/dist
-    to: shared
-    filter: ["**/*"]
-  - node_modules/**
+    filter: ["index.js"]
 
 win:
   target: nsis
