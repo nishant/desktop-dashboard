@@ -201,7 +201,9 @@ async function winGetDeviceData(): Promise<WinDeviceData> {
       "$vol|$mute|$def|$list"
     `);
     const [volStr, muteStr, defName, listStr] = out.split('|');
-    const volumePercent = Math.round(Number(volStr));
+    // Get-AudioDevice -PlaybackVolume returns "42%" (string with trailing %)
+    const volumePercent = Math.round(Number(volStr.replace('%', '').trim()));
+    if (!Number.isFinite(volumePercent)) throw new Error('AudioDeviceCmdlets returned non-numeric volume');
     const muted = muteStr.trim() === 'True';
     const activeDeviceName = defName.trim();
     const names = listStr ? listStr.split(',').map((s) => s.trim()).filter(Boolean) : [activeDeviceName];

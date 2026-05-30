@@ -4,6 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: Windows master volume slider snaps to 0
+**Branch:** `fix/sound-windows-v2` → `master`
+**Date:** 2026-05-30
+
+### Fixed
+- **`packages/server/src/routes/sound.ts`** — `winGetDeviceData()` parsed `Get-AudioDevice -PlaybackVolume` as a plain number, but the AudioDeviceCmdlets module returns a string with a trailing `%` (e.g. `"42%"`). `Number("42%")` → `NaN`, which JSON-serialized as `null`, which the renderer coerced to `0` via `?? 0`. After every commit the slider snapped to 0 even though the underlying Windows volume was set correctly.
+- Now strips the `%`, trims, and throws to fall through to the WASAPI path if parsing fails (so future format changes don't silently produce 0).
+
+---
+
 ## feat: Twitch widget — channel search + in-tile playback
 **Branch:** `feat/twitch-widget` → `master`
 **Date:** 2026-05-30
