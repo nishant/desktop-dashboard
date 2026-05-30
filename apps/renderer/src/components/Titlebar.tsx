@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Pin, Layers, Palette, ArrowLeft, ChevronRight } from 'lucide-react';
+import { LayoutGrid, Pin, Layers, Palette, ArrowLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { PRESETS, ALL_WIDGET_IDS, WIDGET_TITLES } from '../lib/layouts';
 import { useLayoutStore } from '../store/layoutStore';
 import { useThemeStore } from '../store/themeStore';
-import type { CustomColors } from '../store/themeStore';
+import type { CustomColors, SavedCustomTheme } from '../store/themeStore';
 import { THEMES } from '../themes';
 import { parseHex } from '../lib/colorUtils';
 import { cn } from '../lib/utils';
@@ -192,7 +192,7 @@ function ColorPicker({
     <div className="flex items-center gap-2">
       <span className="text-th-3 text-[10px] w-[58px] shrink-0 leading-none">{label}</span>
 
-      {/* Native color picker, visually replaced by a styled swatch */}
+      {/* Native color picker visually replaced by a styled swatch */}
       <label
         className="h-5 w-5 rounded shrink-0 cursor-pointer ring-1 ring-th-line overflow-hidden relative"
         style={{ background: value }}
@@ -232,17 +232,28 @@ function ColorPicker({
   );
 }
 
-// ── Theme menu — Custom editor panel ─────────────────────────────────────────
+// ── Theme menu — Custom color editor ─────────────────────────────────────────
 
 function CustomEditor({
   colors,
   onChange,
   onBack,
+  onSave,
 }: {
   colors: CustomColors;
   onChange: (c: CustomColors) => void;
   onBack: () => void;
+  onSave: (name: string) => void;
 }) {
+  const [saveName, setSaveName] = useState('');
+
+  function handleSave() {
+    const name = saveName.trim();
+    if (!name) return;
+    onSave(name);
+    setSaveName('');
+  }
+
   return (
     <div className="px-3 py-2 flex flex-col gap-3">
       {/* Header */}
@@ -256,7 +267,7 @@ function CustomEditor({
         <span className="text-th-hi text-[11px] font-semibold">Custom Theme</span>
       </div>
 
-      {/* Pickers */}
+      {/* Color pickers */}
       <div className="flex flex-col gap-2.5">
         <ColorPicker
           label="Background"
@@ -280,21 +291,94 @@ function CustomEditor({
         />
       </div>
 
-      <p className="text-th-ghost text-[9px] leading-tight">
-        Changes apply live. Semantic colors (stocks, hardware) are preserved.
+      {/* Save as */}
+      <div className="border-t border-th-line pt-2.5 flex flex-col gap-1.5">
+        <span className="text-th-ghost text-[9px] uppercase tracking-wider">Save as</span>
+        <div className="flex gap-1.5">
+          <input
+            type="text"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            placeholder="Theme name…"
+            maxLength={32}
+            className="flex-1 bg-th-elevated border border-th-line rounded px-2 py-1 text-[10px] text-th-hi placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
+          />
+          <button
+            onClick={handleSave}
+            disabled={!saveName.trim()}
+            className="px-2.5 py-1 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+
+      <p className="text-th-ghost text-[9px] leading-tight -mt-1">
+        Semantic colors (stocks, hardware) are preserved.
       </p>
+    </div>
+  );
+}
+
+// ── Theme menu — Delete confirmation modal ────────────────────────────────────
+
+function DeleteModal({
+  target,
+  onConfirm,
+  onCancel,
+}: {
+  target: SavedCustomTheme;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60"
+      style={noDragStyle}
+    >
+      <div className="bg-th-surface border border-th-line rounded-xl p-5 w-72 shadow-2xl flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-th-hi text-sm font-semibold">Delete theme?</span>
+          <span className="text-th-3 text-[11px] leading-relaxed">
+            <span className="text-th-hi font-medium">"{target.name}"</span> will be
+            permanently removed. This cannot be undone.
+          </span>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1.5 text-[11px] text-th-2 hover:text-th-hi bg-th-elevated hover:bg-th-overlay rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1.5 text-[11px] font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── Theme menu ────────────────────────────────────────────────────────────────
 
-function ThemeMenu() {
-  const { theme, customColors, setTheme, setCustomColors } = useThemeStore();
-  const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState<'list' | 'custom'>('list');
+type ThemePanel = 'list' | 'custom-list' | 'editor';
 
-  // Swatch for the active theme in the button — use primary color for custom
+function ThemeMenu() {
+  const {
+    theme, customColors, savedCustomThemes, activeCustomId,
+    setTheme, setCustomColors, saveCustomTheme, deleteCustomTheme, applyCustomTheme,
+  } = useThemeStore();
+
+  const [open, setOpen]               = useState(false);
+  const [panel, setPanel]             = useState<ThemePanel>('list');
+  const [deleteTarget, setDeleteTarget] = useState<SavedCustomTheme | null>(null);
+
+  // Swatch for the button: use primary color when custom is active
   const activeSwatch =
     theme === 'custom'
       ? customColors.primary
@@ -310,9 +394,20 @@ function ThemeMenu() {
       handleClose();
     } else {
       setOpen(true);
-      // If custom is already active, open straight to the editor
-      setPanel(theme === 'custom' ? 'custom' : 'list');
+      // If custom is active, open straight to the saved-themes list
+      setPanel(theme === 'custom' ? 'custom-list' : 'list');
     }
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    deleteCustomTheme(deleteTarget.id);
+    setDeleteTarget(null);
+  }
+
+  function handleSaveTheme(name: string) {
+    saveCustomTheme(name);
+    setPanel('custom-list');
   }
 
   return (
@@ -331,55 +426,125 @@ function ThemeMenu() {
           <Backdrop onClose={handleClose} />
 
           <div
-            className={cn(menuPanel, panel === 'custom' && 'min-w-[240px]')}
+            className={cn(menuPanel, panel !== 'list' && 'min-w-[248px]')}
             style={noDragStyle}
           >
-            {panel === 'list' ? (
-              /* ── Theme list ── */
-              THEMES.map((t) => {
-                const swatch = t.id === 'custom' ? customColors.primary : t.swatch;
-                return (
+            {/* ── Main theme list ── */}
+            {panel === 'list' && THEMES.map((t) => {
+              const swatch = t.id === 'custom' ? customColors.primary : t.swatch;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    if (t.id === 'custom') {
+                      setTheme('custom');
+                      setPanel('custom-list');
+                    } else {
+                      setTheme(t.id);
+                      handleClose();
+                    }
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] transition-colors',
+                    theme === t.id
+                      ? 'text-th-hi bg-th-elevated'
+                      : 'text-th-2 hover:text-th-hi hover:bg-th-elevated/60',
+                  )}
+                >
+                  <span
+                    className="h-3 w-3 rounded-full shrink-0 ring-1 ring-white/10"
+                    style={{ background: swatch }}
+                  />
+                  {t.name}
+                  {t.id === 'custom' && (
+                    <ChevronRight size={10} className="ml-auto text-th-ghost" />
+                  )}
+                </button>
+              );
+            })}
+
+            {/* ── Custom themes submenu ── */}
+            {panel === 'custom-list' && (
+              <>
+                {/* Header */}
+                <div className="flex items-center gap-1.5 px-3 pt-1 pb-2 border-b border-th-line">
                   <button
-                    key={t.id}
-                    onClick={() => {
-                      if (t.id === 'custom') {
-                        setTheme('custom');
-                        setPanel('custom');
-                      } else {
-                        setTheme(t.id);
-                        handleClose();
-                      }
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] transition-colors',
-                      theme === t.id
-                        ? 'text-th-hi bg-th-elevated'
-                        : 'text-th-2 hover:text-th-hi hover:bg-th-elevated/60',
-                    )}
+                    onClick={() => setPanel('list')}
+                    className="text-th-ghost hover:text-th-hi transition-colors p-0.5 -ml-0.5"
                   >
-                    <span
-                      className="h-3 w-3 rounded-full shrink-0 ring-1 ring-white/10"
-                      style={{ background: swatch }}
-                    />
-                    {t.name}
-                    {t.id === 'custom' && (
-                      <ChevronRight size={10} className="ml-auto text-th-ghost" />
-                    )}
+                    <ArrowLeft size={12} />
                   </button>
-                );
-              })
-            ) : (
-              /* ── Custom editor ── */
+                  <span className="text-th-3 text-[10px] uppercase tracking-wider font-medium">
+                    Custom Themes
+                  </span>
+                </div>
+
+                {/* Create new — always first */}
+                <button
+                  onClick={() => setPanel('editor')}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-th-2 hover:text-th-hi hover:bg-th-elevated/60 transition-colors mt-0.5"
+                >
+                  <Plus size={11} className="shrink-0" />
+                  Create new
+                </button>
+
+                {/* Divider + saved themes */}
+                {savedCustomThemes.length > 0 && (
+                  <>
+                    <div className="h-px bg-th-line mx-3 my-1" />
+                    {savedCustomThemes.map((t) => (
+                      <div key={t.id} className="flex items-center gap-1 px-1 group">
+                        <button
+                          onClick={() => { applyCustomTheme(t.id); handleClose(); }}
+                          className={cn(
+                            'flex-1 flex items-center gap-2 px-2 py-1.5 text-[11px] rounded transition-colors min-w-0',
+                            activeCustomId === t.id && theme === 'custom'
+                              ? 'text-th-hi bg-th-elevated'
+                              : 'text-th-2 hover:text-th-hi hover:bg-th-elevated/60',
+                          )}
+                        >
+                          <span
+                            className="h-3 w-3 rounded-full shrink-0 ring-1 ring-white/10"
+                            style={{ background: t.colors.primary }}
+                          />
+                          <span className="truncate">{t.name}</span>
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(t)}
+                          title={`Delete "${t.name}"`}
+                          className="p-1 rounded text-th-ghost hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ── Color editor ── */}
+            {panel === 'editor' && (
               <CustomEditor
                 colors={customColors}
                 onChange={(colors) => {
                   setCustomColors(colors);
-                  // Theme is already 'custom' (set when entering this panel)
+                  setTheme('custom');
                 }}
-                onBack={() => setPanel('list')}
+                onBack={() => setPanel('custom-list')}
+                onSave={handleSaveTheme}
               />
             )}
           </div>
+
+          {/* Delete confirmation modal — rendered over everything */}
+          {deleteTarget && (
+            <DeleteModal
+              target={deleteTarget}
+              onConfirm={handleConfirmDelete}
+              onCancel={() => setDeleteTarget(null)}
+            />
+          )}
         </>
       )}
     </div>

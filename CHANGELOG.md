@@ -4,6 +4,29 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat/named-custom-themes — Save and name custom themes
+**Branch:** `feat/named-custom-themes` → `master`
+**Date:** 2026-05-30
+
+### Added
+- **Named custom themes** — users can save any custom color set under a name. Saved themes persist across sessions (Zustand persist).
+- **Custom themes submenu** — "Custom" in the main theme list now opens a second panel:
+  - "Create new" is always the first item; opens the color editor.
+  - Saved themes listed below a divider, each with a color swatch (primary color) and a hover-reveal ✕ delete button.
+  - Back arrow returns to the main theme list.
+- **Delete confirmation modal** — clicking ✕ on a saved theme shows a fixed modal asking for confirmation before removal. Cancel / Delete buttons.
+- **Save as section** in the color editor — name input + Save button at the bottom of the editor. Saving adds the theme to the list and navigates back to the custom submenu.
+- `SavedCustomTheme` interface (`{ id, name, colors }`) exported from `themeStore.ts`.
+- `saveCustomTheme(name)`, `deleteCustomTheme(id)`, `applyCustomTheme(id)` actions in `themeStore`.
+- `activeCustomId` tracked in store — highlights the active saved theme in the submenu.
+
+### Changed
+- `setCustomColors` now clears `activeCustomId` (colors are "unsaved" once edited).
+- Opening Themes while a custom theme is active goes directly to the custom submenu instead of the main list.
+- Applying a saved custom theme sets its colors as `customColors` and marks it active; switching away clears `activeCustomId`.
+
+---
+
 ## feat/theming-updates — ThemeMenu label, distinct swatches, custom theme
 **Branch:** `feat/theming-updates` → `master`
 **Date:** 2026-05-30
