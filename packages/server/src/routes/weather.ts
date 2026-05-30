@@ -4,16 +4,28 @@ import { SimpleCache } from '../cache/SimpleCache';
 
 const TTL_MS = 15 * 60 * 1000;
 
-// Cache keyed by "lat,lon" rounded to 2 decimal places (~1 km precision)
-const caches = new Map<string, SimpleCache<WeatherData>>();
+// ── IP geolocation ────────────────────────────────────────────────────────────
 
-function getCache(lat: number, lon: number): SimpleCache<WeatherData> {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
-  if (!caches.has(key)) caches.set(key, new SimpleCache<WeatherData>());
-  return caches.get(key)!;
+interface IpGeo { lat: number; lon: number; timezone: string; city: string; regionName: string; }
+
+const geoCache = new SimpleCache<IpGeo>();
+
+async function getGeoFromIp(): Promise<IpGeo> {
+  const cached = geoCache.get();
+  if (cached) return cached;
+  // ip-api.com: free, no key, 45 req/min — more than enough (we cache for 15 min)
+  const res = await fetch('http://ip-api.com/json/?fields=lat,lon,timezone,city,regionName');
+  if (!res.ok) throw new Error(`ip-api error ${res.status}`);
+  const geo = await res.json() as IpGeo;
+  geoCache.set(geo, 60 * 60 * 1000); // cache IP geo for 1 hour
+  return geo;
 }
 
-function buildUrl(lat: number, lon: number): string {
+// ── Weather fetch ─────────────────────────────────────────────────────────────
+
+const weatherCache = new SimpleCache<WeatherData>();
+
+function buildUrl(lat: number, lon: number, timezone: string): string {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.searchParams.set('latitude', String(lat));
   url.searchParams.set('longitude', String(lon));
@@ -29,13 +41,13 @@ function buildUrl(lat: number, lon: number): string {
   ].join(','));
   url.searchParams.set('temperature_unit', 'fahrenheit');
   url.searchParams.set('windspeed_unit', 'mph');
-  url.searchParams.set('timezone', 'auto');   // inferred from coordinates
+  url.searchParams.set('timezone', timezone);
   url.searchParams.set('forecast_days', '6');
   return url.toString();
 }
 
-async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
-  const res = await fetch(buildUrl(lat, lon));
+async function fetchWeather(lat: number, lon: number, timezone: string): Promise<WeatherData> {
+  const res = await fetch(buildUrl(lat, lon, timezone));
   if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
 
   const raw = await res.json() as {
@@ -95,23 +107,16 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
   };
 }
 
-type Qs = { lat: string; lon: string };
+// ── Route ─────────────────────────────────────────────────────────────────────
 
 export const weatherRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get<{ Querystring: Qs; Reply: WeatherData }>('/', async (req, reply) => {
-    const lat = parseFloat(req.query.lat);
-    const lon = parseFloat(req.query.lon);
-
-    if (isNaN(lat) || isNaN(lon)) {
-      return reply.code(400).send({ error: 'lat and lon query params required' } as unknown as WeatherData);
-    }
-
-    const cache = getCache(lat, lon);
-    const cached = cache.get();
+  fastify.get<{ Reply: WeatherData }>('/', async (_req, reply) => {
+    const cached = weatherCache.get();
     if (cached) return reply.send(cached);
 
-    const data = await fetchWeather(lat, lon);
-    cache.set(data, TTL_MS);
+    const geo = await getGeoFromIp();
+    const data = await fetchWeather(geo.lat, geo.lon, geo.timezone);
+    weatherCache.set(data, TTL_MS);
     return reply.send(data);
   });
 };
