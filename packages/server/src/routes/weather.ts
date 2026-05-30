@@ -2,32 +2,40 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { WeatherData } from '@dash/shared';
 import { SimpleCache } from '../cache/SimpleCache';
 
-const LAT = 30.2672;
-const LON = -97.7431;
 const TTL_MS = 15 * 60 * 1000;
 
-const cache = new SimpleCache<WeatherData>();
+// Cache keyed by "lat,lon" rounded to 2 decimal places (~1 km precision)
+const caches = new Map<string, SimpleCache<WeatherData>>();
 
-const FORECAST_URL = new URL('https://api.open-meteo.com/v1/forecast');
-FORECAST_URL.searchParams.set('latitude', String(LAT));
-FORECAST_URL.searchParams.set('longitude', String(LON));
-FORECAST_URL.searchParams.set('current', [
-  'temperature_2m', 'apparent_temperature', 'relative_humidity_2m',
-  'precipitation_probability', 'weathercode', 'windspeed_10m', 'uv_index',
-].join(','));
-FORECAST_URL.searchParams.set('hourly', [
-  'temperature_2m', 'precipitation_probability', 'weathercode',
-].join(','));
-FORECAST_URL.searchParams.set('daily', [
-  'weathercode', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max',
-].join(','));
-FORECAST_URL.searchParams.set('temperature_unit', 'fahrenheit');
-FORECAST_URL.searchParams.set('windspeed_unit', 'mph');
-FORECAST_URL.searchParams.set('timezone', 'America/Chicago');
-FORECAST_URL.searchParams.set('forecast_days', '6');
+function getCache(lat: number, lon: number): SimpleCache<WeatherData> {
+  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  if (!caches.has(key)) caches.set(key, new SimpleCache<WeatherData>());
+  return caches.get(key)!;
+}
 
-async function fetchWeather(): Promise<WeatherData> {
-  const res = await fetch(FORECAST_URL.toString());
+function buildUrl(lat: number, lon: number): string {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', String(lat));
+  url.searchParams.set('longitude', String(lon));
+  url.searchParams.set('current', [
+    'temperature_2m', 'apparent_temperature', 'relative_humidity_2m',
+    'precipitation_probability', 'weathercode', 'windspeed_10m', 'uv_index',
+  ].join(','));
+  url.searchParams.set('hourly', [
+    'temperature_2m', 'precipitation_probability', 'weathercode',
+  ].join(','));
+  url.searchParams.set('daily', [
+    'weathercode', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max',
+  ].join(','));
+  url.searchParams.set('temperature_unit', 'fahrenheit');
+  url.searchParams.set('windspeed_unit', 'mph');
+  url.searchParams.set('timezone', 'auto');   // inferred from coordinates
+  url.searchParams.set('forecast_days', '6');
+  return url.toString();
+}
+
+async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
+  const res = await fetch(buildUrl(lat, lon));
   if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
 
   const raw = await res.json() as {
@@ -56,8 +64,7 @@ async function fetchWeather(): Promise<WeatherData> {
     };
   };
 
-  // Find the index of the current hour in the hourly array
-  const nowHour = raw.current.time.slice(0, 13); // "YYYY-MM-DDTHH"
+  const nowHour = raw.current.time.slice(0, 13);
   const hourIdx = raw.hourly.time.findIndex((t) => t.startsWith(nowHour));
   const startIdx = hourIdx >= 0 ? hourIdx : 0;
 
@@ -88,12 +95,22 @@ async function fetchWeather(): Promise<WeatherData> {
   };
 }
 
+type Qs = { lat: string; lon: string };
+
 export const weatherRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get<{ Reply: WeatherData }>('/', async (_req, reply) => {
+  fastify.get<{ Querystring: Qs; Reply: WeatherData }>('/', async (req, reply) => {
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return reply.code(400).send({ error: 'lat and lon query params required' } as unknown as WeatherData);
+    }
+
+    const cache = getCache(lat, lon);
     const cached = cache.get();
     if (cached) return reply.send(cached);
 
-    const data = await fetchWeather();
+    const data = await fetchWeather(lat, lon);
     cache.set(data, TTL_MS);
     return reply.send(data);
   });

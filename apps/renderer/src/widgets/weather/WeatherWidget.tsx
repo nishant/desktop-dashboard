@@ -18,7 +18,7 @@ function formatDay(dateStr: string): string {
 }
 
 export function WeatherWidget() {
-  const { data, isLoading, isError } = useWeather();
+  const { data, isLoading, isError, denied } = useWeather();
 
   // Callback ref — fires when the element actually mounts (after loading resolves),
   // unlike useRef which is null on the first render due to the early returns below.
@@ -75,6 +75,14 @@ export function WeatherWidget() {
     return (
       <div className="h-full flex items-center justify-center">
         <span className="text-th-ghost text-sm">Loading…</span>
+      </div>
+    );
+  }
+
+  if (denied) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <span className="text-th-ghost text-sm">Location access denied</span>
       </div>
     );
   }
