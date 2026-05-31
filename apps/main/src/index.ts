@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, globalShortcut, session } from 'electron';
 import path from 'path';
 import { spawnServer, stopServer } from './server/spawn';
 import { registerIpcHandlers } from './ipc';
@@ -36,6 +36,11 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  // Strip "Electron/x.x.x" from the user-agent so YouTube (and other sites that
+  // block Electron) see a plain Chrome browser instead of the Electron shell.
+  const ua = session.defaultSession.getUserAgent().replace(/\s*Electron\/[\d.]+/, '');
+  session.defaultSession.setUserAgent(ua);
+
   await spawnServer();
   registerIpcHandlers(ipcMain);
   createWindow();
