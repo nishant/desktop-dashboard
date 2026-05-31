@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import si from 'systeminformation';
 import { weatherRoutes } from './routes/weather';
 import { spotifyRoutes } from './routes/spotify';
 import { stocksRoutes } from './routes/stocks';
@@ -31,6 +32,21 @@ async function start(): Promise<void> {
   server.get('/health', async () => ({ status: 'ok' }));
 
   await server.listen({ port, host: '127.0.0.1' });
+
+  // Warm up slow OS APIs in the background so the first renderer request is fast.
+  // si.currentLoad() needs a ~1s CPU delta sample; si.graphics() calls system_profiler
+  // (cold: 3-5s). Fire-and-forget — failures are non-fatal.
+  Promise.allSettled([
+    si.currentLoad(),
+    si.graphics(),
+    si.cpuTemperature(),
+    // Prime osascript on macOS so the sound route doesn't cold-start on first request
+    ...(process.platform === 'darwin'
+      ? [import('child_process').then(({ exec }) =>
+          new Promise<void>((res) => exec("osascript -e 'output volume of (get volume settings)'", () => res()))
+        )]
+      : []),
+  ]).then(() => server.log.info('[warmup] done'));
 }
 
 start().catch((err) => {

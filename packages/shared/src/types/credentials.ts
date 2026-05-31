@@ -1,4 +1,5 @@
 export const CREDENTIAL_KEYS = [
+  'YOUTUBE_API_KEY',
   'ALPACA_API_KEY',
   'ALPACA_API_SECRET',
   'TWITCH_CLIENT_ID',
@@ -15,6 +16,7 @@ export interface CredentialDef {
 }
 
 export const CREDENTIAL_DEFS: CredentialDef[] = [
+  { key: 'YOUTUBE_API_KEY',      label: 'API Key',       service: 'YouTube' },
   { key: 'ALPACA_API_KEY',       label: 'API Key',       service: 'Stocks (Alpaca)' },
   { key: 'ALPACA_API_SECRET',    label: 'API Secret',    service: 'Stocks (Alpaca)' },
   { key: 'TWITCH_CLIENT_ID',     label: 'Client ID',     service: 'Twitch' },

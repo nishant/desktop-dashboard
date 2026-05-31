@@ -37,6 +37,9 @@ export function useHardware() {
     queryFn: () => apiClient.get<HardwareData>('/api/hardware'),
     refetchInterval: 1000,
     staleTime: 900,
+    // system_profiler (graphics) can take 3-5s on cold start — retry generously
+    retry: 8,
+    retryDelay: 1000,
   });
 
   useEffect(() => {

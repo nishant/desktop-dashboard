@@ -78,31 +78,11 @@ export const PRESETS: NamedLayout[] = [
     ],
   },
   {
-    // Hardware + youtube top, 5 cols below
-    // Cols  0-13: hardware(11) + spotify(6)  + weather(5)  = 22  [0-5: hardware+spotify+weather, 6-13: hardware+spotify+calendar]
-    // Corrected:
-    // Cols  0-13: hardware(11) + spotify(6)   + weather(5)  = 22  — actually need to check per-column
-    // Cols  0-5:  hardware(11) + spotify(6)   + weather(5)  = 22
-    // Cols  6-13: hardware(11) + spotify(6)   + calendar(5) = 22  [hmm spotify w=6 starts at x=0]
-    // Let me redo: hardware x=0 w=14, youtube x=14 w=10
-    // spotify x=0 w=6, calendar x=6 w=8, stocks x=14 w=5, weather x=19 w=5, sound x=14 w=10 (bottom row)
-    // Cols  0-5:  hardware(11) + spotify(6)   + weather(5)  = 22
-    // Cols  6-13: hardware(11) + calendar(6)  + sound(5)    = 22  [calendar w=8 covers 6-13, sound x=14 w=10 covers 14-23]
-    // Cols 14-18: youtube(11)  + stocks(6)    + sound(5)    = 22
-    // Cols 19-23: youtube(11)  + weather(6)   + sound(5)    = 22
-    // Wait — let me be more careful. stocks x=14 w=5, weather x=19 w=5 in bottom left, sound x=14 w=10 in bottom row
-    // Cols 14-18: youtube(11) + stocks(6) + sound(5) = 22 ✓
-    // Cols 19-23: youtube(11) + weather(6) + sound(5) = 22 ✓
-    // Cols 6-13: hardware(11) + calendar(6) + ??? — calendar h=6 ends at y=17, need 5 more rows. sound x=14 doesn't cover cols 6-13.
-    // Need to rethink. Let me use the plan from summary:
-    // hardware: x=0 y=0 w=14 h=11, youtube: x=14 y=0 w=10 h=11
-    // spotify: x=0 y=11 w=6 h=11, calendar: x=6 y=11 w=8 h=11
-    // stocks: x=14 y=11 w=5 h=6, weather: x=19 y=11 w=5 h=6
-    // sound: x=14 y=17 w=10 h=5
-    // Cols 0-5: hardware(11) + spotify(11) = 22 ✓
-    // Cols 6-13: hardware(11) + calendar(11) = 22 ✓
-    // Cols 14-18: youtube(11) + stocks(6) + sound(5) = 22 ✓
-    // Cols 19-23: youtube(11) + weather(6) + sound(5) = 22 ✓
+    // hardware + 2 left | youtube top-right, stocks/weather + sound bottom-right
+    // Cols  0-5:  hardware(11) + spotify(11) = 22
+    // Cols  6-13: hardware(11) + calendar(11) = 22
+    // Cols 14-18: youtube(11)  + stocks(6) + sound(5) = 22
+    // Cols 19-23: youtube(11)  + weather(6) + sound(5) = 22
     name: 'System',
     layout: [
       { i: 'hardware', x: 0,  y: 0,  w: 14, h: 11, minW: 6, minH: 4 },
@@ -115,18 +95,11 @@ export const PRESETS: NamedLayout[] = [
     ],
   },
   {
-    // Spotify full-height left, youtube center-top, stocks right
-    // spotify: x=0 y=0 w=8 h=22
-    // youtube: x=8 y=0 w=10 h=11, stocks: x=18 y=0 w=6 h=11
-    // hardware: x=8 y=11 w=6 h=11, calendar: x=14 y=11 w=5 h=11 — wait that only covers 14-18
-    // Let me use the summary plan:
-    // spotify: x=0 w=8 h=22
-    // youtube: x=8 w=10 h=11, stocks: x=18 w=6 h=11
-    // hardware: x=8 w=6 h=11, weather: x=14 w=5 h=6, sound: x=14 w=5 h=5, calendar: x=19 w=5 h=11
-    // Cols 0-7: spotify(22) = 22 ✓
-    // Cols 8-13: youtube(11) + hardware(11) = 22 ✓
-    // Cols 14-18: youtube(11) + weather(6) + sound(5) = 22 ✓
-    // Cols 19-23: stocks(11) + calendar(11) = 22 ✓
+    // Spotify full-height left | youtube+stocks top, hardware+weather/sound+calendar bottom
+    // Cols 0-7: spotify(22) = 22
+    // Cols 8-13: youtube(11) + hardware(11) = 22
+    // Cols 14-18: youtube(11) + weather(6) + sound(5) = 22
+    // Cols 19-23: stocks(11) + calendar(11) = 22
     name: 'Focus',
     layout: [
       { i: 'spotify',  x: 0,  y: 0,  w: 8,  h: 22, minW: 4, minH: 5 },
@@ -139,15 +112,11 @@ export const PRESETS: NamedLayout[] = [
     ],
   },
   {
-    // Info stack left, stocks+sound mid, youtube full-height, spotify full-height
-    // weather: x=0 w=5 h=7, hardware: x=0 w=5 h=8, calendar: x=0 w=5 h=7
-    // stocks: x=5 w=6 h=14, sound: x=5 w=6 h=8
-    // youtube: x=11 w=7 h=22
-    // spotify: x=18 w=6 h=22
-    // Cols 0-4: weather(7) + hardware(8) + calendar(7) = 22 ✓
-    // Cols 5-10: stocks(14) + sound(8) = 22 ✓
-    // Cols 11-17: youtube(22) = 22 ✓
-    // Cols 18-23: spotify(22) = 22 ✓
+    // Info stack left, stocks+sound mid, youtube+spotify full-height right
+    // Cols 0-4: weather(7) + hardware(8) + calendar(7) = 22
+    // Cols 5-10: stocks(14) + sound(8) = 22
+    // Cols 11-17: youtube(22) = 22
+    // Cols 18-23: spotify(22) = 22
     name: 'Chill',
     layout: [
       { i: 'weather',  x: 0,  y: 0,  w: 5,  h: 7,  minW: 4, minH: 4 },
@@ -161,16 +130,11 @@ export const PRESETS: NamedLayout[] = [
   },
   {
     // Stocks + youtube equal top row, everything below
-    // stocks: x=0 w=12 h=11, youtube: x=12 w=12 h=11
-    // hardware: x=0 w=9 h=11, spotify: x=9 w=7 h=11
-    // weather: x=16 w=4 h=6, sound: x=16 w=4 h=5, calendar: x=20 w=4 h=11
-    // Cols 0-8: stocks(11) + hardware(11) = 22 ✓
-    // Cols 9-15: stocks(11) + spotify(11) = 22 ✓
-    // Cols 12-15: youtube(11) + spotify(11) = 22 — wait, stocks covers 0-11 (w=12), youtube covers 12-23 (w=12)
-    // Cols 9-11: stocks(11) + spotify(11) = 22 ✓
-    // Cols 12-15: youtube(11) + spotify(11) = 22 ✓  (spotify x=9 w=7 covers 9-15)
-    // Cols 16-19: youtube(11) + weather(6) + sound(5) = 22 ✓
-    // Cols 20-23: youtube(11) + calendar(11) = 22 ✓
+    // Cols 0-8: stocks(11) + hardware(11) = 22
+    // Cols 9-11: stocks(11) + spotify(11) = 22
+    // Cols 12-15: youtube(11) + spotify(11) = 22
+    // Cols 16-19: youtube(11) + weather(6) + sound(5) = 22
+    // Cols 20-23: youtube(11) + calendar(11) = 22
     name: 'Wide',
     layout: [
       { i: 'stocks',   x: 0,  y: 0,  w: 12, h: 11, minW: 5, minH: 5 },
@@ -180,22 +144,6 @@ export const PRESETS: NamedLayout[] = [
       { i: 'weather',  x: 16, y: 11, w: 4,  h: 6,  minW: 4, minH: 4 },
       { i: 'sound',    x: 16, y: 17, w: 4,  h: 5,  minW: 3, minH: 3 },
       { i: 'calendar', x: 20, y: 11, w: 4,  h: 11, minW: 4, minH: 4 },
-    ],
-  },
-  {
-    // YouTube player hero left, supporting widgets right + bottom.
-    // Cols  0-13: youtube(14) + hardware(8)               = 22
-    // Cols 14-19: spotify(8)  + stocks(6)  + calendar(8) = 22
-    // Cols 20-23: spotify(8)  + stocks(6)  + weather(4) + sound(4) = 22
-    name: 'YouTube',
-    layout: [
-      { i: 'youtube',  x: 0,  y: 0,  w: 14, h: 14, minW: 6, minH: 6 },
-      { i: 'spotify',  x: 14, y: 0,  w: 10, h: 8,  minW: 4, minH: 5 },
-      { i: 'stocks',   x: 14, y: 8,  w: 10, h: 6,  minW: 5, minH: 5 },
-      { i: 'hardware', x: 0,  y: 14, w: 14, h: 8,  minW: 6, minH: 4 },
-      { i: 'calendar', x: 14, y: 14, w: 6,  h: 8,  minW: 4, minH: 4 },
-      { i: 'weather',  x: 20, y: 14, w: 4,  h: 4,  minW: 4, minH: 4 },
-      { i: 'sound',    x: 20, y: 18, w: 4,  h: 4,  minW: 3, minH: 3 },
     ],
   },
 ];
@@ -248,9 +196,6 @@ const PRESET_TREES: Record<string, SplitNode> = {
   ),
 
   // Media: left = youtube stacked on twitch | right = spotify(w=8)+slim info col, stocks+hardware below
-  // Cols  0-11: youtube(11) + twitch(11) = 22
-  // Cols 12-19: spotify(11) + stocks(5) + hardware(6) = 22
-  // Cols 20-23: weather(6)  + calendar(3) + sound(2) + stocks(5) + hardware(6) = 22
   Media: v(.5,
     h(.5, l('youtube'), l('twitch')),
     h(11/22,
@@ -295,15 +240,6 @@ const PRESET_TREES: Record<string, SplitNode> = {
     v(9/24, l('hardware'), v(7/15,
       l('spotify'),
       v(.5, h(6/11, l('weather'), l('sound')), l('calendar')),
-    )),
-  ),
-
-  // YouTube: youtube+hardware left | spotify, stocks, calendar/weather/sound right
-  YouTube: v(14/24,
-    h(14/22, l('youtube'), l('hardware')),
-    h(8/22, l('spotify'), h(6/14,
-      l('stocks'),
-      v(6/10, l('calendar'), h(.5, l('weather'), l('sound'))),
     )),
   ),
 };

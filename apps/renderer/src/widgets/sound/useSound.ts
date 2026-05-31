@@ -8,6 +8,9 @@ export function useSound() {
     queryFn: () => apiClient.get<SoundData>('/api/sound'),
     refetchInterval: 5000,
     staleTime: 4000,
+    // osascript can be slow on first cold-boot of a freshly spawned child process
+    retry: 5,
+    retryDelay: 1500,
   });
 }
 
