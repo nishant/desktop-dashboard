@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: edit saved custom themes
+**Branch:** `feat/edit-custom-themes` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`themeStore.ts`** — `updateCustomTheme(id)` action: snapshots current `customColors` into the named saved entry, keeping the same `id` and `name`. Interface updated accordingly.
+- **`Titlebar.tsx` `CustomEditor`** — accepts optional `editTarget?: SavedCustomTheme` and `onUpdate?: () => void`. In edit mode renders `Edit "<name>"` header and a single "Save changes" button instead of the name input + Save pair.
+- **`Titlebar.tsx` `ThemeMenu`** — clicking a saved custom theme row now applies it (loads its colors) and opens the editor in edit mode. Tweaking colors via the pickers updates `customColors` live (same as before). "Save changes" snapshots current colors back into that entry. Back arrow returns without saving. Delete (X) unchanged.
+
+---
+
 ## feat: edit saved custom layouts
 **Branch:** `feat/edit-custom-layouts` → `master`
 **Date:** 2026-05-30
