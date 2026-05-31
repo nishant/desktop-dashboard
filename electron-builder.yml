@@ -1,5 +1,5 @@
-appId: com.nish.desktop-dashboard
-productName: Dashboard
+appId: com.nish.nishboard
+productName: Nishboard
 copyright: Copyright © 2025 Nish
 # Electron lives in apps/main/node_modules (workspace), not at root — pin the version explicitly.
 electronVersion: "33.4.11"

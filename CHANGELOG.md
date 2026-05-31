@@ -4,6 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: rename to Nishboard; remove YouTube named layout preset
+**Branch:** `feat/nishboard-no-youtube` → `master`
+**Date:** 2026-05-30
+
+### Changed
+- **`electron-builder.yml`** — `productName: Dashboard` → `productName: Nishboard`; `appId` updated to `com.nish.nishboard`. The packaged app will now appear as **Nishboard** in the macOS menu bar, dock, and DMG.
+- **`apps/renderer/src/lib/layouts.ts`** — The named **YouTube** preset removed from `PRESETS` and `PRESET_TREES`. The YouTube widget itself is unchanged — it still appears in all other presets (Default, Markets, Media, System, Focus, Chill, Wide) and remains togglable from the Widgets menu.
+
+---
+
 ## fix: electron-builder config for monorepo packaging
 **Branch:** `fix/electron-builder-packaging` → `master`
 **Date:** 2026-05-30
