@@ -4,6 +4,24 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: saveable custom layouts with per-layout pinned tiles
+**Branch:** `claude/code-session-connectivity-4ddFC` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **Custom layouts** — you can now arrange the dashboard (drag/resize tiles, pin/unpin which tiles show) and save it under a name. Saved layouts appear under **Layouts → Custom**, mirroring the existing **Themes → Custom** flow. Applying a saved layout restores both the tile geometry **and** that layout's pinned-tile set, so different layouts can show different widgets.
+- **`apps/renderer/src/store/layoutStore.ts`** — new `SavedCustomLayout` type (`{ id, name, layout, visibleWidgets }`) plus `savedCustomLayouts`, `activeCustomLayoutId` state and `saveCustomLayout` / `deleteCustomLayout` / `applyCustomLayout` actions. `saveCustomLayout` snapshots the current `layout` + `visibleWidgets` (deep-copied so later edits don't mutate the saved entry). `applyCustomLayout` restores both. `onRehydrateStorage` back-fills the new fields for older persisted state.
+- **`apps/renderer/src/components/Titlebar.tsx`** — `LayoutsMenu` reworked into a three-panel flow (`list` → `custom-list` → `editor`) like `ThemeMenu`. New `CustomLayoutEditor` (in-menu pin/unpin toggles that update `visibleWidgets` live + a *Save as* name field) and `LayoutDeleteModal` (delete confirmation). The editor panel intentionally renders **no backdrop** so the grid behind it stays draggable/resizable while you edit.
+
+### Changed
+- **`apps/renderer/src/store/layoutStore.ts`** — `setLayout`, `applyPreset`, `resetToDefault`, `showWidget`, and `hideWidget` now clear `activeCustomLayoutId` so the active-custom highlight only persists while the saved arrangement is unmodified (matching the theme store's `activeCustomId` semantics).
+
+### Notes / gotchas
+- `pinnedPresets` (pin a layout to the titlebar bar) is unchanged and still applies to built-in presets only — custom layouts are not bar-pinnable. "Pinned **tiles**" in the editor refers to visible widgets, a separate concept from bar-pinned presets.
+- `visibleWidgets` remains global state; applying a custom layout overwrites it with that layout's stored set.
+
+---
+
 ## fix: Windows master volume slider snaps to 0 + app mixer empty
 **Branch:** `fix/sound-windows-v2` → `master`
 **Date:** 2026-05-30
