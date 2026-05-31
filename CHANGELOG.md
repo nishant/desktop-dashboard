@@ -4,6 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: server port conflict on relaunch + YouTube Error 153 referrer
+**Branch:** `fix/server-port-conflict-youtube` → `master`
+**Date:** 2026-05-31
+
+### Fixed
+- **Every other launch APIs unresponsive** — `apps/main/src/server/spawn.ts`: on launch, `killStaleOnPort()` now runs before spawning the server. If a previous Electron instance crashed or exited before its server child fully died, the new launch clears the port first (`lsof -ti tcp:7432 | kill -9` on mac/linux, `netstat + taskkill` on Windows) so the new server always binds successfully.
+- **YouTube Error 153** (second root cause) — `apps/main/src/index.ts`: added a `webRequest.onBeforeSendHeaders` interceptor that injects `Referer: https://www.youtube.com/` on all requests to `*.youtube.com`, `*.youtube-nocookie.com`, and `*.googlevideo.com`. In production the app loads from `file://` which sends a null referer; YouTube's embed player treats that as an unauthorized origin and returns Error 153. Note: if a specific video has embedding explicitly disabled by its uploader, Error 153 will still appear — that's a per-video restriction, not an app issue.
+
+---
+
 ## fix: YouTube Error 153 (video player configuration error)
 **Branch:** `fix/youtube-error-153` → `master`
 **Date:** 2026-05-31
