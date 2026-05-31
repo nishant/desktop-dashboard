@@ -4,13 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
-## fix: Windows master volume slider snaps to 0
+## fix: Windows master volume slider snaps to 0 + app mixer empty
 **Branch:** `fix/sound-windows-v2` → `master`
 **Date:** 2026-05-30
 
 ### Fixed
-- **`packages/server/src/routes/sound.ts`** — `winGetDeviceData()` parsed `Get-AudioDevice -PlaybackVolume` as a plain number, but the AudioDeviceCmdlets module returns a string with a trailing `%` (e.g. `"42%"`). `Number("42%")` → `NaN`, which JSON-serialized as `null`, which the renderer coerced to `0` via `?? 0`. After every commit the slider snapped to 0 even though the underlying Windows volume was set correctly.
-- Now strips the `%`, trims, and throws to fall through to the WASAPI path if parsing fails (so future format changes don't silently produce 0).
+- **Master volume slider snapped to 0 after every commit.** `winGetDeviceData()` parsed `Get-AudioDevice -PlaybackVolume` as a plain number, but the AudioDeviceCmdlets module returns a string with a trailing `%` (e.g. `"42%"`). `Number("42%")` → `NaN`, which JSON-serialized as `null`, which the renderer coerced to `0` via `?? 0`. Now strips the `%`, trims, and throws on non-finite parse so the WASAPI fallback kicks in if the format ever changes.
+- **App mixer always empty** despite Discord/Steam/etc. playing audio. Three compounding bugs:
+  1. `psRun` used `-EncodedCommand` which base64-encodes the WASAPI script to ~18k chars — well past Windows' 8191-char `CreateProcess` command-line limit. Every session enumeration failed with "The command line is too long" and the `.catch(() => [])` swallowed it. Switched to writing a UTF-16 LE temp `.ps1` and invoking via `-File` (with `-ExecutionPolicy Bypass` since `-File` doesn't auto-bypass like `-EncodedCommand` does).
+  2. The WASAPI walk was done in PowerShell with `$obj -as [IFoo]` casts on COM objects. PowerShell's `-as` operator does **not** trigger `QueryInterface` on dynamically-Add-Typed COM interfaces (it returns `$null`), nor does the explicit `[IFoo]$x` cast, nor does dispatch on `System.__ComObject` (no `IDispatch` on WASAPI interfaces). Moved **all** session walking into a single C# `[W]::GetSessions()` static method where C# casts emit QI at compile time. PowerShell only receives the final `string[]` of `pid|name|vol|muted` lines. The C# source is base64-encoded to survive the trip through Node `writeFile` → PowerShell `-File` without here-string quoting fragility.
+  3. Every COM interface method declaration needed an explicit `[PreserveSig]` attribute. Without it, .NET auto-translates HRESULT returns: `IsSystemSoundsSession()` silently returned 0 for **every** session, so every app showed as "System Sounds" with the wrong name and `pid=0` lookup. With `[PreserveSig]`, real apps return `S_FALSE (1)` and the actual process name is resolved (Discord, Steam, etc.).
 
 ---
 
