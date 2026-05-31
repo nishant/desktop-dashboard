@@ -1,4 +1,6 @@
 export const CREDENTIAL_KEYS = [
+  'SPOTIFY_CLIENT_ID',
+  'ANTHROPIC_API_KEY',
   'YOUTUBE_API_KEY',
   'ALPACA_API_KEY',
   'ALPACA_API_SECRET',
@@ -16,6 +18,18 @@ export interface CredentialDef {
 }
 
 export const CREDENTIAL_DEFS: CredentialDef[] = [
+  {
+    key: 'SPOTIFY_CLIENT_ID',
+    label: 'Client ID',
+    service: 'Spotify',
+    hint: 'Create an app at developer.spotify.com → Dashboard. Set redirect URI to http://localhost:7432/api/spotify/callback',
+  },
+  {
+    key: 'ANTHROPIC_API_KEY',
+    label: 'API Key',
+    service: 'Claude (Anthropic)',
+    hint: 'Get your key at console.anthropic.com',
+  },
   { key: 'YOUTUBE_API_KEY',      label: 'API Key',       service: 'YouTube' },
   { key: 'ALPACA_API_KEY',       label: 'API Key',       service: 'Stocks (Alpaca)' },
   { key: 'ALPACA_API_SECRET',    label: 'API Secret',    service: 'Stocks (Alpaca)' },

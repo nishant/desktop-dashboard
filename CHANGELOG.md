@@ -4,6 +4,20 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: Spotify + Claude credentials configurable in Settings (no .env required)
+**Branch:** `feat/claude-widget` → `master`
+**Date:** 2026-05-31
+
+### Changed
+- **`packages/shared/src/types/credentials.ts`** — `SPOTIFY_CLIENT_ID` and `ANTHROPIC_API_KEY` added to `CREDENTIAL_KEYS` and `CREDENTIAL_DEFS`. Both now appear in the Settings modal with inline setup hints. `SPOTIFY_CLIENT_ID` explains how to create a Spotify Developer app and register the redirect URI; `ANTHROPIC_API_KEY` links to console.anthropic.com.
+- **`packages/server/src/routes/spotify.ts`** — `redirectUri()` now defaults to `http://localhost:7432/api/spotify/callback` instead of empty string, so Spotify auth works out of the box once a Client ID is set.
+- **`apps/renderer/src/components/SettingsModal.tsx`** — `CredentialRow` renders an optional `hint` below the input. Footer note updated.
+
+### How it works
+The Electron main process reads credentials from safeStorage, injects them as env vars into the server child process on restart. Saving in Settings triggers `restartServer()` automatically — no manual restart needed.
+
+---
+
 ## feat: Claude chat widget
 **Branch:** `feat/claude-widget` → `master`
 **Date:** 2026-05-31
