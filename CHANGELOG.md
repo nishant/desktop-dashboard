@@ -4,6 +4,13 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: update Home preset to match actual nish layout
+**Branch:** `feat/home-preset-v2` → `master`
+**Date:** 2026-05-31
+
+### Changed
+- **`layouts.ts`** — Home preset updated: YouTube (h=12) spans the full right width at top; Spotify (w=6, h=10) and Weather (w=6, h=10) sit side-by-side below it. Weather is now woven into the BSP tree. Twitch remains absent (falls to bottom-row overflow if toggled on).
+
 ## feat: add Home preset layout
 **Branch:** `feat/home-preset` → `master`
 **Date:** 2026-05-31
