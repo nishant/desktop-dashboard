@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: edit saved custom layouts
+**Branch:** `feat/edit-custom-layouts` → `master`
+**Date:** 2026-05-30
+
+### Added
+- **`layoutStore.ts`** — `updateCustomLayout(id)` action: snapshots current `layout` and `visibleWidgets` into the named saved entry, keeping the same `id` and `name`. Interface updated accordingly.
+- **`Titlebar.tsx` `CustomLayoutEditor`** — accepts optional `editTarget?: SavedCustomLayout` and `onUpdate?: () => void`. In edit mode renders `Edit "<name>"` header and a single "Save changes" button instead of the name input + Save pair.
+- **`Titlebar.tsx` `LayoutsMenu`** — clicking a saved layout row now applies it immediately to the dashboard (so you can drag/resize) and opens the editor in edit mode. "Save changes" snapshots the current layout + visible widgets back into that entry. Back arrow returns to the custom list without saving. Delete (X) still works as before.
+
+---
+
 ## feat: Spotify disconnect button
 **Branch:** `feat/spotify-logout` → `master`
 **Date:** 2026-05-31
