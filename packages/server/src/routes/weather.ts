@@ -2,32 +2,52 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { WeatherData } from '@dash/shared';
 import { SimpleCache } from '../cache/SimpleCache';
 
-const LAT = 30.2672;
-const LON = -97.7431;
 const TTL_MS = 15 * 60 * 1000;
 
-const cache = new SimpleCache<WeatherData>();
+// ── IP geolocation ────────────────────────────────────────────────────────────
 
-const FORECAST_URL = new URL('https://api.open-meteo.com/v1/forecast');
-FORECAST_URL.searchParams.set('latitude', String(LAT));
-FORECAST_URL.searchParams.set('longitude', String(LON));
-FORECAST_URL.searchParams.set('current', [
-  'temperature_2m', 'apparent_temperature', 'relative_humidity_2m',
-  'precipitation_probability', 'weathercode', 'windspeed_10m', 'uv_index',
-].join(','));
-FORECAST_URL.searchParams.set('hourly', [
-  'temperature_2m', 'precipitation_probability', 'weathercode',
-].join(','));
-FORECAST_URL.searchParams.set('daily', [
-  'weathercode', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max',
-].join(','));
-FORECAST_URL.searchParams.set('temperature_unit', 'fahrenheit');
-FORECAST_URL.searchParams.set('windspeed_unit', 'mph');
-FORECAST_URL.searchParams.set('timezone', 'America/Chicago');
-FORECAST_URL.searchParams.set('forecast_days', '6');
+interface IpGeo { lat: number; lon: number; timezone: string; city: string; regionName: string; }
 
-async function fetchWeather(): Promise<WeatherData> {
-  const res = await fetch(FORECAST_URL.toString());
+const geoCache = new SimpleCache<IpGeo>();
+
+async function getGeoFromIp(): Promise<IpGeo> {
+  const cached = geoCache.get();
+  if (cached) return cached;
+  // ip-api.com: free, no key, 45 req/min — more than enough (we cache for 15 min)
+  const res = await fetch('http://ip-api.com/json/?fields=lat,lon,timezone,city,regionName');
+  if (!res.ok) throw new Error(`ip-api error ${res.status}`);
+  const geo = await res.json() as IpGeo;
+  geoCache.set(geo, 60 * 60 * 1000); // cache IP geo for 1 hour
+  return geo;
+}
+
+// ── Weather fetch ─────────────────────────────────────────────────────────────
+
+const weatherCache = new SimpleCache<WeatherData>();
+
+function buildUrl(lat: number, lon: number, timezone: string): string {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', String(lat));
+  url.searchParams.set('longitude', String(lon));
+  url.searchParams.set('current', [
+    'temperature_2m', 'apparent_temperature', 'relative_humidity_2m',
+    'precipitation_probability', 'weathercode', 'windspeed_10m', 'uv_index',
+  ].join(','));
+  url.searchParams.set('hourly', [
+    'temperature_2m', 'precipitation_probability', 'weathercode',
+  ].join(','));
+  url.searchParams.set('daily', [
+    'weathercode', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max',
+  ].join(','));
+  url.searchParams.set('temperature_unit', 'fahrenheit');
+  url.searchParams.set('windspeed_unit', 'mph');
+  url.searchParams.set('timezone', timezone);
+  url.searchParams.set('forecast_days', '6');
+  return url.toString();
+}
+
+async function fetchWeather(lat: number, lon: number, timezone: string): Promise<WeatherData> {
+  const res = await fetch(buildUrl(lat, lon, timezone));
   if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
 
   const raw = await res.json() as {
@@ -56,8 +76,7 @@ async function fetchWeather(): Promise<WeatherData> {
     };
   };
 
-  // Find the index of the current hour in the hourly array
-  const nowHour = raw.current.time.slice(0, 13); // "YYYY-MM-DDTHH"
+  const nowHour = raw.current.time.slice(0, 13);
   const hourIdx = raw.hourly.time.findIndex((t) => t.startsWith(nowHour));
   const startIdx = hourIdx >= 0 ? hourIdx : 0;
 
@@ -88,13 +107,16 @@ async function fetchWeather(): Promise<WeatherData> {
   };
 }
 
+// ── Route ─────────────────────────────────────────────────────────────────────
+
 export const weatherRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Reply: WeatherData }>('/', async (_req, reply) => {
-    const cached = cache.get();
+    const cached = weatherCache.get();
     if (cached) return reply.send(cached);
 
-    const data = await fetchWeather();
-    cache.set(data, TTL_MS);
+    const geo = await getGeoFromIp();
+    const data = await fetchWeather(geo.lat, geo.lon, geo.timezone);
+    weatherCache.set(data, TTL_MS);
     return reply.send(data);
   });
 };

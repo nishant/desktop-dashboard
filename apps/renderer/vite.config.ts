@@ -18,4 +18,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  // Relative asset paths so file:// protocol works in the packaged Electron app.
+  // Without this Vite emits src="/assets/..." which resolves to filesystem root, not the bundle.
+  base: './',
 });

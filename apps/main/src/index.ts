@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
 import path from 'path';
 import { spawnServer, stopServer } from './server/spawn';
 import { registerIpcHandlers } from './ipc';
@@ -26,7 +26,8 @@ function createWindow(): void {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
+    // __dirname = app/dist/ → one level up reaches app/ → renderer/dist/index.html
+    mainWindow.loadFile(path.join(__dirname, '../renderer/dist/index.html'));
   }
 
   mainWindow.on('closed', () => {
@@ -38,6 +39,11 @@ app.whenReady().then(async () => {
   await spawnServer();
   registerIpcHandlers(ipcMain);
   createWindow();
+
+  // Cmd+Option+I (mac) / Ctrl+Shift+I (win) opens DevTools in any build
+  globalShortcut.register('CommandOrControl+Option+I', () => {
+    mainWindow?.webContents.openDevTools({ mode: 'detach' });
+  });
 });
 
 app.on('window-all-closed', () => {
