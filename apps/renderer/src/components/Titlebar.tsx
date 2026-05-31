@@ -67,20 +67,28 @@ function CustomLayoutEditor({
   hideWidget,
   onBack,
   onSave,
+  editTarget,
+  onUpdate,
 }: {
   visibleWidgets: WidgetId[];
   showWidget: (id: WidgetId) => void;
   hideWidget: (id: WidgetId) => void;
   onBack: () => void;
   onSave: (name: string) => void;
+  editTarget?: SavedCustomLayout;
+  onUpdate?: () => void;
 }) {
   const [saveName, setSaveName] = useState('');
 
   function handleSave() {
-    const name = saveName.trim();
-    if (!name) return;
-    onSave(name);
-    setSaveName('');
+    if (editTarget) {
+      onUpdate?.();
+    } else {
+      const name = saveName.trim();
+      if (!name) return;
+      onSave(name);
+      setSaveName('');
+    }
   }
 
   return (
@@ -93,7 +101,9 @@ function CustomLayoutEditor({
         >
           <ArrowLeft size={12} />
         </button>
-        <span className="text-th-hi text-[11px] font-semibold">Custom Layout</span>
+        <span className="text-th-hi text-[11px] font-semibold">
+          {editTarget ? `Edit "${editTarget.name}"` : 'Custom Layout'}
+        </span>
       </div>
 
       <p className="text-th-ghost text-[9px] leading-tight">
@@ -129,27 +139,38 @@ function CustomLayoutEditor({
         })}
       </div>
 
-      {/* Save as */}
+      {/* Save / Update */}
       <div className="border-t border-th-line pt-2.5 flex flex-col gap-1.5">
-        <span className="text-th-ghost text-[9px] uppercase tracking-wider">Save as</span>
-        <div className="flex gap-1.5">
-          <input
-            type="text"
-            value={saveName}
-            onChange={(e) => setSaveName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-            placeholder="Layout name…"
-            maxLength={32}
-            className="flex-1 bg-th-elevated border border-th-line rounded px-2 py-1 text-[10px] text-th-hi placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
-          />
+        {editTarget ? (
           <button
             onClick={handleSave}
-            disabled={!saveName.trim()}
-            className="px-2.5 py-1 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="w-full px-2.5 py-1.5 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors shrink-0"
           >
-            Save
+            Save changes
           </button>
-        </div>
+        ) : (
+          <>
+            <span className="text-th-ghost text-[9px] uppercase tracking-wider">Save as</span>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                placeholder="Layout name…"
+                maxLength={32}
+                className="flex-1 bg-th-elevated border border-th-line rounded px-2 py-1 text-[10px] text-th-hi placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
+              />
+              <button
+                onClick={handleSave}
+                disabled={!saveName.trim()}
+                className="px-2.5 py-1 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                Save
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -207,16 +228,18 @@ function LayoutsMenu() {
     activePreset, applyPreset, pinnedPresets, pinPreset, unpinPreset,
     visibleWidgets, showWidget, hideWidget,
     savedCustomLayouts, activeCustomLayoutId,
-    saveCustomLayout, deleteCustomLayout, applyCustomLayout,
+    saveCustomLayout, deleteCustomLayout, applyCustomLayout, updateCustomLayout,
   } = useLayoutStore();
 
   const [open, setOpen]                 = useState(false);
   const [panel, setPanel]               = useState<LayoutPanel>('list');
   const [deleteTarget, setDeleteTarget] = useState<SavedCustomLayout | null>(null);
+  const [editTarget, setEditTarget]     = useState<SavedCustomLayout | null>(null);
 
   function handleClose() {
     setOpen(false);
     setPanel('list');
+    setEditTarget(null);
   }
 
   function handleToggle() {
@@ -335,7 +358,7 @@ function LayoutsMenu() {
                     {savedCustomLayouts.map((cl) => (
                       <div key={cl.id} className="flex items-center gap-1 px-1 group">
                         <button
-                          onClick={() => { applyCustomLayout(cl.id); handleClose(); }}
+                          onClick={() => { applyCustomLayout(cl.id); setEditTarget(cl); setPanel('editor'); }}
                           className={cn(
                             'flex-1 flex items-center gap-2 px-2 py-1.5 text-[11px] rounded transition-colors min-w-0',
                             activeCustomLayoutId === cl.id
@@ -366,8 +389,14 @@ function LayoutsMenu() {
                 visibleWidgets={visibleWidgets}
                 showWidget={showWidget}
                 hideWidget={hideWidget}
-                onBack={() => setPanel('custom-list')}
+                onBack={() => { setPanel('custom-list'); setEditTarget(null); }}
                 onSave={handleSaveLayout}
+                editTarget={editTarget ?? undefined}
+                onUpdate={() => {
+                  updateCustomLayout(editTarget!.id);
+                  setEditTarget(null);
+                  setPanel('custom-list');
+                }}
               />
             )}
           </div>

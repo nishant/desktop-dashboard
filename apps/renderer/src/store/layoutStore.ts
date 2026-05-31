@@ -32,6 +32,8 @@ interface LayoutState {
   deleteCustomLayout: (id: string) => void;
   /** Restore a saved layout's tile positions AND its pinned tile set. */
   applyCustomLayout: (id: string) => void;
+  /** Overwrite an existing saved layout with the current layout + visibleWidgets. */
+  updateCustomLayout: (id: string) => void;
 }
 
 export const useLayoutStore = create<LayoutState>()(
@@ -132,6 +134,16 @@ export const useLayoutStore = create<LayoutState>()(
         set((s) => ({
           savedCustomLayouts: s.savedCustomLayouts.filter((l) => l.id !== id),
           activeCustomLayoutId: s.activeCustomLayoutId === id ? null : s.activeCustomLayoutId,
+        })),
+
+      updateCustomLayout: (id) =>
+        set((s) => ({
+          savedCustomLayouts: s.savedCustomLayouts.map((l) =>
+            l.id === id
+              ? { ...l, layout: s.layout.map((item) => ({ ...item })), visibleWidgets: [...s.visibleWidgets] }
+              : l,
+          ),
+          activeCustomLayoutId: id,
         })),
 
       applyCustomLayout: (id) =>
