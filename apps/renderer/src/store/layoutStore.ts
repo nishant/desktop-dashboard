@@ -49,11 +49,15 @@ export const useLayoutStore = create<LayoutState>()(
       applyPreset: (name) => {
         const preset = PRESETS.find((p) => p.name === name);
         if (!preset) return;
-        set((s) => ({
-          layout: generateLayout(name, s.visibleWidgets) ?? autoFillLayout(preset.layout),
-          activePreset: name,
-          activeCustomLayoutId: null,
-        }));
+        set((s) => {
+          const newVisible = preset.visibleWidgets ?? s.visibleWidgets;
+          return {
+            layout: generateLayout(name, newVisible) ?? autoFillLayout(preset.layout),
+            visibleWidgets: newVisible,
+            activePreset: name,
+            activeCustomLayoutId: null,
+          };
+        });
       },
 
       resetToDefault: () =>

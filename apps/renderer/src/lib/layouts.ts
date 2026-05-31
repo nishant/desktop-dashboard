@@ -20,6 +20,8 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
 export interface NamedLayout {
   name: string;
   layout: Layout[];
+  /** If set, applying this preset also restores these visible widgets. */
+  visibleWidgets?: WidgetId[];
 }
 
 // 24 cols, dynamic rowHeight (fills screen minus titlebar), margin=[8,8], containerPadding=[8,8]
@@ -34,6 +36,7 @@ export const PRESETS: NamedLayout[] = [
     // Cols 12-13: stocks(8)   + youtube(9)   + hardware(5) = 22
     // Cols 14-23: calendar(8) + sound(9)     + hardware(5) = 22
     name: 'Default',
+    visibleWidgets: ['weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube', 'twitch'],
     layout: [
       { i: 'weather',  x: 0,  y: 0,  w: 6,  h: 8,  minW: 4, minH: 4 },
       { i: 'spotify',  x: 6,  y: 0,  w: 6,  h: 8,  minW: 4, minH: 5 },
@@ -136,6 +139,7 @@ export const PRESETS: NamedLayout[] = [
     // Cols 18-23: youtube(12)  + weather(10) = 22
     // Twitch hidden by default — BSP prune handles it if toggled on.
     name: 'Home',
+    visibleWidgets: ['weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube'],
     layout: [
       { i: 'hardware', x: 0,  y: 0,  w: 6,  h: 19, minW: 6, minH: 4 },
       { i: 'sound',    x: 0,  y: 19, w: 6,  h: 3,  minW: 3, minH: 2 },
