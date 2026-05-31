@@ -13,3 +13,4 @@ export type { TwitchChannel, TwitchSearchPage } from './types/twitch';
 export type { IpcChannels, ElectronAPI } from './types/ipc';
 export type { CredentialKey, CredentialDef } from './types/credentials';
 export { CREDENTIAL_KEYS, CREDENTIAL_DEFS } from './types/credentials';
+export type { ClaudeMessage, ClaudeChatRequest } from './types/claude';

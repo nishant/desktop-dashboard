@@ -4,6 +4,22 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: Claude chat widget
+**Branch:** `feat/claude-widget` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`packages/shared/src/types/claude.ts`** — `ClaudeMessage` and `ClaudeChatRequest` types.
+- **`packages/server/src/routes/claude.ts`** — `POST /api/claude/chat`: accepts a `messages` array, streams the response back as SSE (`data: {"text":"..."}` chunks + `data: [DONE]`). Uses `@anthropic-ai/sdk` with `messages.stream()`. Model is configurable via `CLAUDE_MODEL` env var, defaults to `claude-opus-4-5`. Client lazily initialized so a missing key doesn't crash the server — returns a `503` instead.
+- **`apps/renderer/src/widgets/claude/ClaudeWidget.tsx`** — full chat UI: streaming message display, auto-scroll, auto-resize textarea, Enter-to-send (Shift+Enter for newlines), clear button, loading state via cursor blink, and an "API key not set" empty state when the server returns a config error.
+- **`apps/renderer/src/lib/layouts.ts`** — `claude` added to `WidgetId`, `ALL_WIDGET_IDS`, `WIDGET_TITLES` ("Claude"), `WIDGET_CONSTRAINTS` (minW=4, minH=6). Not added to any built-in presets — enable it from the Widgets menu.
+- **`apps/renderer/src/components/DashboardGrid.tsx`** — `ClaudeWidget` registered.
+
+### Setup
+Add `ANTHROPIC_API_KEY=sk-ant-...` to `.env`. Optionally set `CLAUDE_MODEL` (defaults to `claude-opus-4-5`).
+
+---
+
 ## fix: `pnpm package` works on non-admin Windows
 **Branch:** `fix/windows-build-cache` → `master`
 **Date:** 2026-05-30

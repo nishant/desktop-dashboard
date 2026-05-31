@@ -1,9 +1,9 @@
 import type { Layout } from 'react-grid-layout';
 
-export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar' | 'youtube' | 'twitch';
+export type WidgetId = 'weather' | 'spotify' | 'stocks' | 'hardware' | 'sound' | 'calendar' | 'youtube' | 'twitch' | 'claude';
 
 export const ALL_WIDGET_IDS: WidgetId[] = [
-  'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube', 'twitch',
+  'weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube', 'twitch', 'claude',
 ];
 
 export const WIDGET_TITLES: Record<WidgetId, string> = {
@@ -15,6 +15,7 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
   calendar: 'Calendar',
   youtube: 'YouTube',
   twitch: 'Twitch',
+  claude: 'Claude',
 };
 
 export interface NamedLayout {
@@ -195,6 +196,7 @@ const WIDGET_CONSTRAINTS: Record<WidgetId, { minW: number; minH: number }> = {
   calendar: { minW: 4, minH: 3 },
   youtube:  { minW: 6, minH: 6 },
   twitch:   { minW: 6, minH: 6 },
+  claude:   { minW: 4, minH: 6 },
 };
 
 // Each tree mirrors its static PRESETS counterpart exactly (verified col-by-col).
