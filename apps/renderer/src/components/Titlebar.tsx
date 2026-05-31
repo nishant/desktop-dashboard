@@ -543,19 +543,27 @@ function CustomEditor({
   onChange,
   onBack,
   onSave,
+  editTarget,
+  onUpdate,
 }: {
   colors: CustomColors;
   onChange: (c: CustomColors) => void;
   onBack: () => void;
   onSave: (name: string) => void;
+  editTarget?: SavedCustomTheme;
+  onUpdate?: () => void;
 }) {
   const [saveName, setSaveName] = useState('');
 
   function handleSave() {
-    const name = saveName.trim();
-    if (!name) return;
-    onSave(name);
-    setSaveName('');
+    if (editTarget) {
+      onUpdate?.();
+    } else {
+      const name = saveName.trim();
+      if (!name) return;
+      onSave(name);
+      setSaveName('');
+    }
   }
 
   return (
@@ -568,7 +576,9 @@ function CustomEditor({
         >
           <ArrowLeft size={12} />
         </button>
-        <span className="text-th-hi text-[11px] font-semibold">Custom Theme</span>
+        <span className="text-th-hi text-[11px] font-semibold">
+          {editTarget ? `Edit "${editTarget.name}"` : 'Custom Theme'}
+        </span>
       </div>
 
       {/* Color pickers */}
@@ -595,27 +605,38 @@ function CustomEditor({
         />
       </div>
 
-      {/* Save as */}
+      {/* Save / Update */}
       <div className="border-t border-th-line pt-2.5 flex flex-col gap-1.5">
-        <span className="text-th-ghost text-[9px] uppercase tracking-wider">Save as</span>
-        <div className="flex gap-1.5">
-          <input
-            type="text"
-            value={saveName}
-            onChange={(e) => setSaveName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-            placeholder="Theme name…"
-            maxLength={32}
-            className="flex-1 bg-th-elevated border border-th-line rounded px-2 py-1 text-[10px] text-th-hi placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
-          />
+        {editTarget ? (
           <button
             onClick={handleSave}
-            disabled={!saveName.trim()}
-            className="px-2.5 py-1 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="w-full px-2.5 py-1.5 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors shrink-0"
           >
-            Save
+            Save changes
           </button>
-        </div>
+        ) : (
+          <>
+            <span className="text-th-ghost text-[9px] uppercase tracking-wider">Save as</span>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                placeholder="Theme name…"
+                maxLength={32}
+                className="flex-1 bg-th-elevated border border-th-line rounded px-2 py-1 text-[10px] text-th-hi placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
+              />
+              <button
+                onClick={handleSave}
+                disabled={!saveName.trim()}
+                className="px-2.5 py-1 text-[10px] bg-th-overlay hover:bg-th-overlay/70 text-th-hi rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                Save
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <p className="text-th-ghost text-[9px] leading-tight -mt-1">
@@ -675,12 +696,13 @@ type ThemePanel = 'list' | 'custom-list' | 'editor';
 function ThemeMenu() {
   const {
     theme, customColors, savedCustomThemes, activeCustomId,
-    setTheme, setCustomColors, saveCustomTheme, deleteCustomTheme, applyCustomTheme,
+    setTheme, setCustomColors, saveCustomTheme, deleteCustomTheme, applyCustomTheme, updateCustomTheme,
   } = useThemeStore();
 
-  const [open, setOpen]               = useState(false);
-  const [panel, setPanel]             = useState<ThemePanel>('list');
+  const [open, setOpen]                 = useState(false);
+  const [panel, setPanel]               = useState<ThemePanel>('list');
   const [deleteTarget, setDeleteTarget] = useState<SavedCustomTheme | null>(null);
+  const [editTarget, setEditTarget]     = useState<SavedCustomTheme | null>(null);
 
   // Swatch for the button: use primary color when custom is active
   const activeSwatch =
@@ -691,6 +713,7 @@ function ThemeMenu() {
   function handleClose() {
     setOpen(false);
     setPanel('list');
+    setEditTarget(null);
   }
 
   function handleToggle() {
@@ -799,7 +822,7 @@ function ThemeMenu() {
                     {savedCustomThemes.map((t) => (
                       <div key={t.id} className="flex items-center gap-1 px-1 group">
                         <button
-                          onClick={() => { applyCustomTheme(t.id); handleClose(); }}
+                          onClick={() => { applyCustomTheme(t.id); setEditTarget(t); setPanel('editor'); }}
                           className={cn(
                             'flex-1 flex items-center gap-2 px-2 py-1.5 text-[11px] rounded transition-colors min-w-0',
                             activeCustomId === t.id && theme === 'custom'
@@ -835,8 +858,14 @@ function ThemeMenu() {
                   setCustomColors(colors);
                   setTheme('custom');
                 }}
-                onBack={() => setPanel('custom-list')}
+                onBack={() => { setPanel('custom-list'); setEditTarget(null); }}
                 onSave={handleSaveTheme}
+                editTarget={editTarget ?? undefined}
+                onUpdate={() => {
+                  updateCustomTheme(editTarget!.id);
+                  setEditTarget(null);
+                  setPanel('custom-list');
+                }}
               />
             )}
           </div>
