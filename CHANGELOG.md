@@ -4,6 +4,16 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: presets restore visible widgets on apply (Default=all, Home=no twitch)
+**Branch:** `fix/preset-visible-widgets` → `master`
+**Date:** 2026-05-31
+
+### Changed
+- **`layouts.ts`** — `NamedLayout` gains optional `visibleWidgets?: WidgetId[]`. `Default` sets all 8 widgets; `Home` sets all except `twitch`. Other presets leave `visibleWidgets` unchanged (existing behaviour).
+- **`layoutStore.ts`** — `applyPreset` now sets `visibleWidgets` to `preset.visibleWidgets` when the preset defines it, then regenerates the layout from that set.
+
+---
+
 ## feat: update Home preset to match actual nish layout
 **Branch:** `feat/home-preset-v2` → `master`
 **Date:** 2026-05-31
