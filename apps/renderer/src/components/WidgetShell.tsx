@@ -15,7 +15,11 @@ export function WidgetShell({ title, children, actions, className }: WidgetShell
         <GripHorizontal className="w-3.5 h-3.5 text-th-ghost" />
         <span className="text-xs font-medium text-th-3 uppercase tracking-widest">{title}</span>
         {actions && (
-          <div className="ml-auto" style={{ pointerEvents: 'auto', cursor: 'default' }}>
+          <div
+            className="ml-auto"
+            style={{ cursor: 'default' }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {actions}
           </div>
         )}
