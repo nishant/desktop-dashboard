@@ -11,36 +11,43 @@ const SERVICES = Array.from(new Set(CREDENTIAL_DEFS.map((d) => d.service)));
 
 function CredentialRow({
   label,
+  hint,
   value,
   onChange,
 }: {
   label: string;
+  hint?: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-th-3 text-[11px] w-28 shrink-0">{label}</span>
-      <div className="flex-1 flex items-center gap-1.5">
-        <input
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="—"
-          spellCheck={false}
-          className="flex-1 bg-th-elevated border border-th-line rounded-lg px-3 py-1.5 text-th-hi text-[11px] font-mono placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
-        />
-        <button
-          onClick={() => setVisible((v) => !v)}
-          className="text-th-ghost hover:text-th-2 transition-colors shrink-0 p-1"
-          tabIndex={-1}
-          title={visible ? 'Hide' : 'Show'}
-        >
-          {visible ? <EyeOff size={13} /> : <Eye size={13} />}
-        </button>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <span className="text-th-3 text-[11px] w-28 shrink-0">{label}</span>
+        <div className="flex-1 flex items-center gap-1.5">
+          <input
+            type={visible ? 'text' : 'password'}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="—"
+            spellCheck={false}
+            className="flex-1 bg-th-elevated border border-th-line rounded-lg px-3 py-1.5 text-th-hi text-[11px] font-mono placeholder:text-th-ghost focus:outline-none focus:border-th-3 transition-colors"
+          />
+          <button
+            onClick={() => setVisible((v) => !v)}
+            className="text-th-ghost hover:text-th-2 transition-colors shrink-0 p-1"
+            tabIndex={-1}
+            title={visible ? 'Hide' : 'Show'}
+          >
+            {visible ? <EyeOff size={13} /> : <Eye size={13} />}
+          </button>
+        </div>
       </div>
+      {hint && (
+        <p className="text-th-ghost text-[10px] leading-relaxed ml-[124px]">{hint}</p>
+      )}
     </div>
   );
 }
@@ -121,6 +128,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                     <CredentialRow
                       key={def.key}
                       label={def.label}
+                      hint={def.hint}
                       value={values[def.key] ?? ''}
                       onChange={(v) => setValue(def.key, v)}
                     />
@@ -132,9 +140,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
           {/* Info note */}
           <p className="text-th-ghost text-[10px] leading-relaxed border-t border-th-line pt-4">
-            Spotify uses sign-in — no key needed. Weather, Hardware, and Sound require no API keys.
-            <br />
-            Keys are encrypted with your OS keychain and never leave this device.
+            Weather, Hardware, and Sound require no API keys. All keys are encrypted with your OS keychain and never leave this device.
+            <br className="mb-1" />
+            After saving, the server restarts automatically to pick up the new credentials.
           </p>
         </div>
 

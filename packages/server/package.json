@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@dash/shared": "workspace:*",
     "@fastify/cors": "^10.0.1",
     "dotenv": "^16.4.7",
