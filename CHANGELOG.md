@@ -4,6 +4,21 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: `pnpm package` works on non-admin Windows
+**Branch:** `fix/windows-build-cache` → `master`
+**Date:** 2026-05-30
+
+### Fixed
+- `electron-builder` downloads `winCodeSign-2.6.0.7z` and extracts it with `7za`. The archive contains macOS dylib symlinks; on Windows, creating symlinks requires admin or Developer Mode, so `7za` exits with code 2 and the whole `electron-builder` run aborts before any Windows artifacts are produced. The Windows installer was unbuildable from a normal user account.
+- Added **`scripts/prepare-wincodesign.cjs`** — a no-op on macOS/Linux. On Windows, it downloads the archive (if not already cached) and extracts it with `-xr!darwin` so `7za` never touches the symlink entries, then places the result at the cache path electron-builder expects (`%LOCALAPPDATA%/electron-builder/Cache/winCodeSign/winCodeSign-2.6.0`). The darwin dylibs are unused for Windows builds.
+- **`package.json`** — `package` script now runs the prep script before `electron-builder` and passes `CSC_IDENTITY_AUTO_DISCOVERY=false` (we don't have a Windows code signing cert).
+- **`package.json`** — added `packageManager: "pnpm@11.3.0"` so Turbo 2.9 can resolve the workspace.
+
+### Output
+- `release/Nishboard Setup 0.1.0.exe` (79MB, NSIS installer, unsigned). Distributable as-is; end users see Windows SmartScreen "Windows protected your PC" → **More info → Run anyway**.
+
+---
+
 ## fix: Windows master volume slider snaps to 0 + app mixer empty
 **Branch:** `fix/sound-windows-v2` → `master`
 **Date:** 2026-05-30
