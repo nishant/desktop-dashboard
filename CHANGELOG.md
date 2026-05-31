@@ -4,6 +4,95 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: `pnpm package` works on non-admin Windows
+**Branch:** `fix/windows-build-cache` → `master`
+**Date:** 2026-05-30
+
+### Fixed
+- `electron-builder` downloads `winCodeSign-2.6.0.7z` and extracts it with `7za`. The archive contains macOS dylib symlinks; on Windows, creating symlinks requires admin or Developer Mode, so `7za` exits with code 2 and the whole `electron-builder` run aborts before any Windows artifacts are produced. The Windows installer was unbuildable from a normal user account.
+- Added **`scripts/prepare-wincodesign.cjs`** — a no-op on macOS/Linux. On Windows, it downloads the archive (if not already cached) and extracts it with `-xr!darwin` so `7za` never touches the symlink entries, then places the result at the cache path electron-builder expects (`%LOCALAPPDATA%/electron-builder/Cache/winCodeSign/winCodeSign-2.6.0`). The darwin dylibs are unused for Windows builds.
+- **`package.json`** — `package` script now runs the prep script before `electron-builder` and passes `CSC_IDENTITY_AUTO_DISCOVERY=false` (we don't have a Windows code signing cert).
+- **`package.json`** — added `packageManager: "pnpm@11.3.0"` so Turbo 2.9 can resolve the workspace.
+
+### Output
+- `release/Nishboard Setup 0.1.0.exe` (79MB, NSIS installer, unsigned). Distributable as-is; end users see Windows SmartScreen "Windows protected your PC" → **More info → Run anyway**.
+
+---
+
+## feat: edit saved custom themes
+**Branch:** `feat/edit-custom-themes` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`themeStore.ts`** — `updateCustomTheme(id)` action: snapshots current `customColors` into the named saved entry, keeping the same `id` and `name`. Interface updated accordingly.
+- **`Titlebar.tsx` `CustomEditor`** — accepts optional `editTarget?: SavedCustomTheme` and `onUpdate?: () => void`. In edit mode renders `Edit "<name>"` header and a single "Save changes" button instead of the name input + Save pair.
+- **`Titlebar.tsx` `ThemeMenu`** — clicking a saved custom theme row now applies it (loads its colors) and opens the editor in edit mode. Tweaking colors via the pickers updates `customColors` live (same as before). "Save changes" snapshots current colors back into that entry. Back arrow returns without saving. Delete (X) unchanged.
+
+---
+
+## feat: edit saved custom layouts
+**Branch:** `feat/edit-custom-layouts` → `master`
+**Date:** 2026-05-30
+
+### Added
+- **`layoutStore.ts`** — `updateCustomLayout(id)` action: snapshots current `layout` and `visibleWidgets` into the named saved entry, keeping the same `id` and `name`. Interface updated accordingly.
+- **`Titlebar.tsx` `CustomLayoutEditor`** — accepts optional `editTarget?: SavedCustomLayout` and `onUpdate?: () => void`. In edit mode renders `Edit "<name>"` header and a single "Save changes" button instead of the name input + Save pair.
+- **`Titlebar.tsx` `LayoutsMenu`** — clicking a saved layout row now applies it immediately to the dashboard (so you can drag/resize) and opens the editor in edit mode. "Save changes" snapshots the current layout + visible widgets back into that entry. Back arrow returns to the custom list without saving. Delete (X) still works as before.
+
+---
+
+## feat: Spotify disconnect button
+**Branch:** `feat/spotify-logout` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`packages/server/src/routes/spotify.ts`** — `POST /api/spotify/logout`: clears the in-memory token, deletes `~/.dash/spotify_tokens.json`, and clears the now-playing cache. Server is immediately unauthenticated without restart.
+- **`useSpotify.ts`** — `useSpotifyLogout` mutation: calls the logout endpoint and flips `spotify-status` query data to `{ authenticated: false }` optimistically.
+- **`SpotifyWidget.tsx`** — small `LogOut` icon appears in the top-right corner of the widget on hover (opacity transition). Clicking it disconnects Spotify and returns the widget to the Connect screen.
+
+---
+
+## fix: presets restore visible widgets on apply (Default=all, Home=no twitch)
+**Branch:** `fix/preset-visible-widgets` → `master`
+**Date:** 2026-05-31
+
+### Changed
+- **`layouts.ts`** — `NamedLayout` gains optional `visibleWidgets?: WidgetId[]`. `Default` sets all 8 widgets; `Home` sets all except `twitch`. Other presets leave `visibleWidgets` unchanged (existing behaviour).
+- **`layoutStore.ts`** — `applyPreset` now sets `visibleWidgets` to `preset.visibleWidgets` when the preset defines it, then regenerates the layout from that set.
+
+---
+
+## feat: update Home preset to match actual nish layout
+**Branch:** `feat/home-preset-v2` → `master`
+**Date:** 2026-05-31
+
+### Changed
+- **`layouts.ts`** — Home preset updated: YouTube (h=12) spans the full right width at top; Spotify (w=6, h=10) and Weather (w=6, h=10) sit side-by-side below it. Weather is now woven into the BSP tree. Twitch remains absent (falls to bottom-row overflow if toggled on).
+
+## feat: add Home preset layout
+**Branch:** `feat/home-preset` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`layouts.ts`** — new `Home` built-in preset: Hardware + Sound stacked left (cols 0–5), Stocks + Calendar stacked middle (cols 6–11), YouTube + Spotify stacked right (cols 12–23). Twitch and Weather are absent from the BSP tree; if toggled on they fall to a bottom-row overflow via the existing `generateLayout` fallback.
+
+---
+
+## feat: saveable custom layouts with per-layout pinned tiles
+**Branch:** `claude/code-session-connectivity-4ddFC` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **Custom layouts** — you can now arrange the dashboard (drag/resize tiles, pin/unpin which tiles show) and save it under a name. Saved layouts appear under **Layouts → Custom**, mirroring the existing **Themes → Custom** flow. Applying a saved layout restores both the tile geometry **and** that layout's pinned-tile set, so different layouts can show different widgets.
+- **`apps/renderer/src/store/layoutStore.ts`** — new `SavedCustomLayout` type (`{ id, name, layout, visibleWidgets }`) plus `savedCustomLayouts`, `activeCustomLayoutId` state and `saveCustomLayout` / `deleteCustomLayout` / `applyCustomLayout` actions. `saveCustomLayout` snapshots the current `layout` + `visibleWidgets` (deep-copied so later edits don't mutate the saved entry). `applyCustomLayout` restores both. `onRehydrateStorage` back-fills the new fields for older persisted state.
+- **`apps/renderer/src/components/Titlebar.tsx`** — `LayoutsMenu` reworked into a three-panel flow (`list` → `custom-list` → `editor`) like `ThemeMenu`. New `CustomLayoutEditor` (in-menu pin/unpin toggles that update `visibleWidgets` live + a *Save as* name field) and `LayoutDeleteModal` (delete confirmation). The editor panel intentionally renders **no backdrop** so the grid behind it stays draggable/resizable while you edit.
+
+### Changed
+- **`apps/renderer/src/store/layoutStore.ts`** — `setLayout`, `applyPreset`, `resetToDefault`, `showWidget`, and `hideWidget` now clear `activeCustomLayoutId` so the active-custom highlight only persists while the saved arrangement is unmodified (matching the theme store's `activeCustomId` semantics).
+
+### Notes / gotchas
+- `pinnedPresets` (pin a layout to the titlebar bar) is unchanged and still applies to built-in presets only — custom layouts are not bar-pinnable. "Pinned **tiles**" in the editor refers to visible widgets, a separate concept from bar-pinned presets.
+- `visibleWidgets` remains global state; applying a custom layout overwrites it with that layout's stored set.
 ## feat: edit saved custom themes
 **Branch:** `feat/edit-custom-themes` → `master`
 **Date:** 2026-05-31
