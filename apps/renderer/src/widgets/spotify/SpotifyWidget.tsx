@@ -3,14 +3,14 @@ import {
   Play, Pause, SkipForward, SkipBack,
   Shuffle, Repeat, Repeat1, Volume2, VolumeX,
   Music, ListMusic, ArrowLeft, Monitor, Smartphone, Speaker,
-  Heart, RotateCcw, RotateCw, Mic2, Search,
+  Heart, RotateCcw, RotateCw, Mic2, Search, LogOut,
 } from 'lucide-react';
 import {
   useSpotifyStatus, useNowPlaying, useSpotifyAuthUrl,
   usePlay, usePause, useNext, usePrevious,
   useSeek, useSpotifyVolume, useShuffle, useRepeat,
   usePlaylistsInfinite, usePlaylistTracksInfinite,
-  useDevices, usePlayContext, usePlayTrack,
+  useDevices, usePlayContext, usePlayTrack, useSpotifyLogout,
 } from './useSpotify';
 import { SpotifySearchDialog } from './SpotifySearchDialog';
 import type { TrackData, SpotifyPlaylist, SpotifyDevice, SpotifyTrackItem } from '@dash/shared';
@@ -874,6 +874,8 @@ export function SpotifyWidget() {
     };
   }, [containerEl]);
 
+  const logout = useSpotifyLogout();
+
   const handleConnect = useCallback(async () => {
     const result = await authUrlQuery.refetch();
     if (result.data?.url) window.electron.openSpotifyAuth(result.data.url);
@@ -902,8 +904,18 @@ export function SpotifyWidget() {
     <>
       <div
         ref={setContainerEl}
-        className="rounded-lg border border-th-line bg-th-surface h-full flex flex-col overflow-hidden"
+        className="rounded-lg border border-th-line bg-th-surface h-full flex flex-col overflow-hidden relative group/spotify"
       >
+        {/* Disconnect button — top-right, visible on hover */}
+        <button
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+          title="Disconnect Spotify"
+          className="absolute top-1.5 right-1.5 z-10 p-1 rounded opacity-0 group-hover/spotify:opacity-100 transition-opacity text-th-ghost hover:text-red-400 hover:bg-red-400/10"
+        >
+          <LogOut size={11} />
+        </button>
+
         <div className="flex-1 min-h-0 flex flex-col">
           {showPlaylists ? (
             <PlaylistPanel onBack={() => setShowPlaylists(false)} />

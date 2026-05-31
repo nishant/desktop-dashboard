@@ -233,3 +233,14 @@ export function useQueueTrack() {
       apiClient.post('/api/spotify/queue', args),
   });
 }
+
+export function useSpotifyLogout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post('/api/spotify/logout'),
+    onSuccess: () => {
+      qc.setQueryData(['spotify-status'], { authenticated: false });
+      void qc.invalidateQueries({ queryKey: ['spotify-now-playing'] });
+    },
+  });
+}

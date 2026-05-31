@@ -4,6 +4,17 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: Spotify disconnect button
+**Branch:** `feat/spotify-logout` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`packages/server/src/routes/spotify.ts`** — `POST /api/spotify/logout`: clears the in-memory token, deletes `~/.dash/spotify_tokens.json`, and clears the now-playing cache. Server is immediately unauthenticated without restart.
+- **`useSpotify.ts`** — `useSpotifyLogout` mutation: calls the logout endpoint and flips `spotify-status` query data to `{ authenticated: false }` optimistically.
+- **`SpotifyWidget.tsx`** — small `LogOut` icon appears in the top-right corner of the widget on hover (opacity transition). Clicking it disconnects Spotify and returns the widget to the Connect screen.
+
+---
+
 ## fix: presets restore visible widgets on apply (Default=all, Home=no twitch)
 **Branch:** `fix/preset-visible-widgets` → `master`
 **Date:** 2026-05-31
