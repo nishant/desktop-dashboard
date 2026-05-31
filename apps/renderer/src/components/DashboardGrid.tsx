@@ -4,7 +4,7 @@ import type { Layout } from 'react-grid-layout';
 import { useLayoutStore } from '../store/layoutStore';
 import { WidgetShell } from './WidgetShell';
 import { WeatherWidget } from '../widgets/weather/WeatherWidget';
-import { SpotifyWidget } from '../widgets/spotify/SpotifyWidget';
+import { SpotifyWidget, SpotifyLogoutButton } from '../widgets/spotify/SpotifyWidget';
 import { StocksWidget } from '../widgets/stocks/StocksWidget';
 import { HardwareWidget } from '../widgets/hardware/HardwareWidget';
 import { SoundWidget } from '../widgets/sound/SoundWidget';
@@ -86,7 +86,10 @@ export function DashboardGrid() {
         const id = item.i as WidgetId;
         return (
           <div key={id}>
-            <WidgetShell title={WIDGET_TITLES[id]}>
+            <WidgetShell
+              title={WIDGET_TITLES[id]}
+              actions={id === 'spotify' ? <SpotifyLogoutButton /> : undefined}
+            >
               {WIDGET_COMPONENTS[id]}
             </WidgetShell>
           </div>
