@@ -4,6 +4,15 @@ All changes organized by pull request, newest first.
 
 ---
 
+## fix: YouTube Error 153 (video player configuration error)
+**Branch:** `fix/youtube-error-153` → `master`
+**Date:** 2026-05-31
+
+### Fixed
+- **`apps/main/src/index.ts`** — strips `Electron/x.x.x` from the default session user-agent before any windows open. YouTube detects the Electron UA string and returns Error 153 "Video player configuration error" for most videos. Removing it makes the browser appear as plain Chrome and playback works normally.
+
+---
+
 ## fix: `pnpm package` works on non-admin Windows
 **Branch:** `fix/windows-build-cache` → `master`
 **Date:** 2026-05-30
