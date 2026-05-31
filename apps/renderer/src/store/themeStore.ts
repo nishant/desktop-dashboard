@@ -37,6 +37,8 @@ interface ThemeState {
   deleteCustomTheme: (id: string) => void;
   /** Load a saved theme's colors into customColors and activate it. */
   applyCustomTheme: (id: string) => void;
+  /** Overwrite an existing saved theme's colors with the current customColors. */
+  updateCustomTheme: (id: string) => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -73,6 +75,15 @@ export const useThemeStore = create<ThemeState>()(
           if (!found) return s;
           return { theme: 'custom', customColors: found.colors, activeCustomId: id };
         }),
+
+      updateCustomTheme: (id) =>
+        set((s) => ({
+          savedCustomThemes: s.savedCustomThemes.map((t) =>
+            t.id === id ? { ...t, colors: { ...s.customColors } } : t,
+          ),
+          activeCustomId: id,
+          theme: 'custom',
+        })),
     }),
     { name: 'dashboard-theme' },
   ),

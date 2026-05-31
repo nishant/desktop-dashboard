@@ -3,14 +3,14 @@ import {
   Play, Pause, SkipForward, SkipBack,
   Shuffle, Repeat, Repeat1, Volume2, VolumeX,
   Music, ListMusic, ArrowLeft, Monitor, Smartphone, Speaker,
-  Heart, RotateCcw, RotateCw, Mic2, Search,
+  Heart, RotateCcw, RotateCw, Mic2, Search, LogOut, AlertTriangle,
 } from 'lucide-react';
 import {
   useSpotifyStatus, useNowPlaying, useSpotifyAuthUrl,
   usePlay, usePause, useNext, usePrevious,
   useSeek, useSpotifyVolume, useShuffle, useRepeat,
   usePlaylistsInfinite, usePlaylistTracksInfinite,
-  useDevices, usePlayContext, usePlayTrack,
+  useDevices, usePlayContext, usePlayTrack, useSpotifyLogout,
 } from './useSpotify';
 import { SpotifySearchDialog } from './SpotifySearchDialog';
 import type { TrackData, SpotifyPlaylist, SpotifyDevice, SpotifyTrackItem } from '@dash/shared';
@@ -789,6 +789,63 @@ function NotPlayingView({
         </button>
       </div>
     </div>
+  );
+}
+
+// ── Logout button (rendered in WidgetShell header via DashboardGrid) ──────────
+
+export function SpotifyLogoutButton() {
+  const { data: status } = useSpotifyStatus();
+  const logout = useSpotifyLogout();
+  const [confirming, setConfirming] = useState(false);
+
+  if (!status?.authenticated) return null;
+
+  return (
+    <>
+      <button
+        onClick={() => setConfirming(true)}
+        title="Disconnect Spotify"
+        className="p-1 rounded text-th-ghost hover:text-red-400 hover:bg-red-400/10 transition-colors"
+      >
+        <LogOut size={11} />
+      </button>
+
+      {confirming && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setConfirming(false)}
+        >
+          <div
+            className="bg-th-surface border border-th-line rounded-xl p-6 w-80 shadow-2xl flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={18} className="text-red-400 shrink-0" />
+              <p className="text-th-hi text-sm font-medium">Disconnect Spotify?</p>
+            </div>
+            <p className="text-th-3 text-xs leading-relaxed">
+              This will clear your saved tokens. You'll need to reconnect to see what's playing.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirming(false)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-th-line text-th-3 hover:text-th-hi hover:border-th-hi transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { logout.mutate(); setConfirming(false); }}
+                disabled={logout.isPending}
+                className="px-3 py-1.5 text-xs rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors disabled:opacity-50"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -20,6 +20,8 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
 export interface NamedLayout {
   name: string;
   layout: Layout[];
+  /** If set, applying this preset also restores these visible widgets. */
+  visibleWidgets?: WidgetId[];
 }
 
 // 24 cols, dynamic rowHeight (fills screen minus titlebar), margin=[8,8], containerPadding=[8,8]
@@ -34,6 +36,7 @@ export const PRESETS: NamedLayout[] = [
     // Cols 12-13: stocks(8)   + youtube(9)   + hardware(5) = 22
     // Cols 14-23: calendar(8) + sound(9)     + hardware(5) = 22
     name: 'Default',
+    visibleWidgets: ['weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube', 'twitch'],
     layout: [
       { i: 'weather',  x: 0,  y: 0,  w: 6,  h: 8,  minW: 4, minH: 4 },
       { i: 'spotify',  x: 6,  y: 0,  w: 6,  h: 8,  minW: 4, minH: 5 },
@@ -126,6 +129,25 @@ export const PRESETS: NamedLayout[] = [
       { i: 'sound',    x: 5,  y: 14, w: 6,  h: 8,  minW: 3, minH: 3 },
       { i: 'youtube',  x: 11, y: 0,  w: 7,  h: 22, minW: 6, minH: 6 },
       { i: 'spotify',  x: 18, y: 0,  w: 6,  h: 22, minW: 4, minH: 5 },
+    ],
+  },
+  {
+    // Hardware+sound left | stocks+calendar mid | youtube top-right, spotify+weather bottom-right
+    // Cols  0-5:  hardware(19) + sound(3)    = 22
+    // Cols  6-11: stocks(14)   + calendar(8) = 22
+    // Cols 12-17: youtube(12)  + spotify(10) = 22
+    // Cols 18-23: youtube(12)  + weather(10) = 22
+    // Twitch hidden by default — BSP prune handles it if toggled on.
+    name: 'Home',
+    visibleWidgets: ['weather', 'spotify', 'stocks', 'hardware', 'sound', 'calendar', 'youtube'],
+    layout: [
+      { i: 'hardware', x: 0,  y: 0,  w: 6,  h: 19, minW: 6, minH: 4 },
+      { i: 'sound',    x: 0,  y: 19, w: 6,  h: 3,  minW: 3, minH: 2 },
+      { i: 'stocks',   x: 6,  y: 0,  w: 6,  h: 14, minW: 5, minH: 5 },
+      { i: 'calendar', x: 6,  y: 14, w: 6,  h: 8,  minW: 4, minH: 3 },
+      { i: 'youtube',  x: 12, y: 0,  w: 12, h: 12, minW: 6, minH: 6 },
+      { i: 'spotify',  x: 12, y: 12, w: 6,  h: 10, minW: 4, minH: 5 },
+      { i: 'weather',  x: 18, y: 12, w: 6,  h: 10, minW: 4, minH: 4 },
     ],
   },
   {
@@ -231,6 +253,16 @@ const PRESET_TREES: Record<string, SplitNode> = {
     v(6/19,
       h(14/22, l('stocks'), l('sound')),
       v(7/13, l('youtube'), l('spotify')),
+    ),
+  ),
+
+  // Home: hardware+sound left | stocks+calendar mid | youtube top-right, spotify+weather bottom-right
+  // Twitch absent from tree → falls through to bottom-row fallback in generateLayout.
+  Home: v(6/24,
+    h(19/22, l('hardware'), l('sound')),
+    v(6/18,
+      h(14/22, l('stocks'), l('calendar')),
+      h(12/22, l('youtube'), v(.5, l('spotify'), l('weather'))),
     ),
   ),
 

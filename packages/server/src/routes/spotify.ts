@@ -287,6 +287,14 @@ export const spotifyRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ authenticated: tokens !== null });
   });
 
+  // POST /api/spotify/logout
+  fastify.post('/logout', async (_req, reply) => {
+    tokens = null;
+    try { fs.unlinkSync(TOKENS_FILE); } catch { /* already gone */ }
+    nowPlayingCache.clear();
+    return reply.code(204).send();
+  });
+
   // GET /api/spotify/now-playing
   fastify.get<{ Reply: TrackData | { error: string } }>('/now-playing', async (_req, reply) => {
     const cached = nowPlayingCache.get();
