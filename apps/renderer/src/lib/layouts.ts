@@ -129,6 +129,22 @@ export const PRESETS: NamedLayout[] = [
     ],
   },
   {
+    // Hardware+sound left | stocks+calendar mid | youtube+spotify right
+    // Cols  0-5:  hardware(19) + sound(3)     = 22
+    // Cols  6-11: stocks(14)   + calendar(8)  = 22
+    // Cols 12-23: youtube(14)  + spotify(8)   = 22
+    // Twitch and Weather hidden by default — BSP prune handles them if toggled on.
+    name: 'Home',
+    layout: [
+      { i: 'hardware', x: 0,  y: 0,  w: 6,  h: 19, minW: 6, minH: 4 },
+      { i: 'sound',    x: 0,  y: 19, w: 6,  h: 3,  minW: 3, minH: 2 },
+      { i: 'stocks',   x: 6,  y: 0,  w: 6,  h: 14, minW: 5, minH: 5 },
+      { i: 'calendar', x: 6,  y: 14, w: 6,  h: 8,  minW: 4, minH: 3 },
+      { i: 'youtube',  x: 12, y: 0,  w: 12, h: 14, minW: 6, minH: 6 },
+      { i: 'spotify',  x: 12, y: 14, w: 12, h: 8,  minW: 4, minH: 5 },
+    ],
+  },
+  {
     // Stocks + youtube equal top row, everything below
     // Cols 0-8: stocks(11) + hardware(11) = 22
     // Cols 9-11: stocks(11) + spotify(11) = 22
@@ -231,6 +247,16 @@ const PRESET_TREES: Record<string, SplitNode> = {
     v(6/19,
       h(14/22, l('stocks'), l('sound')),
       v(7/13, l('youtube'), l('spotify')),
+    ),
+  ),
+
+  // Home: hardware+sound left | stocks+calendar mid | youtube+spotify right
+  // Twitch/weather absent from tree → fall through to bottom-row fallback in generateLayout.
+  Home: v(6/24,
+    h(19/22, l('hardware'), l('sound')),
+    v(6/18,
+      h(14/22, l('stocks'), l('calendar')),
+      h(14/22, l('youtube'), l('spotify')),
     ),
   ),
 

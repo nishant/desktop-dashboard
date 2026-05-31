@@ -4,6 +4,15 @@ All changes organized by pull request, newest first.
 
 ---
 
+## feat: add Home preset layout
+**Branch:** `feat/home-preset` → `master`
+**Date:** 2026-05-31
+
+### Added
+- **`layouts.ts`** — new `Home` built-in preset: Hardware + Sound stacked left (cols 0–5), Stocks + Calendar stacked middle (cols 6–11), YouTube + Spotify stacked right (cols 12–23). Twitch and Weather are absent from the BSP tree; if toggled on they fall to a bottom-row overflow via the existing `generateLayout` fallback.
+
+---
+
 ## feat: saveable custom layouts with per-layout pinned tiles
 **Branch:** `claude/code-session-connectivity-4ddFC` → `master`
 **Date:** 2026-05-31
